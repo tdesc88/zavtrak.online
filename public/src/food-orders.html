@@ -1,0 +1,159 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="redux-store.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+
+<link rel="import" href="food-order.html">
+
+
+<dom-module id="food-orders">
+
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-positioning"></style>
+
+    <style include="app-grid-style paper-material-styles">
+        
+            div[name="orders"] {
+            
+                --app-grid-columns: 2;         
+            }
+            .paper-material {
+              padding: 16px;
+              margin: 0;
+              display: inline-block;
+            }
+            [name="order"]
+            {
+                overflow: auto;
+            }
+         
+            @media (max-width: 640px) {
+    
+                div[name="orders"] {
+                    --app-grid-columns: 1;
+                }
+    
+                [name=order]
+                {
+                    max-width: 100vw;
+                }
+            }
+    </style>
+
+    <style>
+        :host {
+              display: block;
+              /* min-height: 100vh; */
+      
+          }
+          
+        :host paper-material[name="kitchen"][status="cooked"] food-cart-item
+        {
+            display: none;
+        }
+
+  </style>
+ 
+ <collection-observer name="orders" subscribed=[[subscribed]]></collection-observer>
+
+    <div name="orders" class="app-grid">               
+        <template is="dom-repeat" items="[[orders]]" sort="_sortByTimestamp"> 
+            <food-order name="order" order=[[item]]></food-order>                    
+        </template>
+    </div>
+    <!-- > Product ( category, type , business logic of client )
+
+    > Order ( flow , state )  - Cart = creates order, user just approve?(register)
+
+    > Delivery  ( map, delivery position, user administration / user profiles ) -->
+
+        
+  </template>
+
+  <script>
+
+    class FoodOrders extends ReduxMixin(Polymer.Element) {
+
+      static get is() { return 'food-orders'; }
+      static get observers() {
+                return ['_computeOrders(immutableOrders)']
+            }
+      static get properties() { return {
+        dictionary:{
+          type: Array,
+          statePath: 'dev.dictionary'
+        },        
+        immutableOrders: {
+            type: Object,
+            statePath: "orders.items"
+        }, 
+        brief: {
+            type: Boolean,
+            value: false
+        },
+        orders: {
+            type: Array,
+            value: [],
+        },     
+      }}
+      
+      _sortByTimestamp( a, b) {
+
+            a = new Date(a.timestamp);
+            b = new Date(b.timestamp);
+            return a>b ? -1 : a<b ? 1 : 0;
+        };
+
+
+    
+
+      _computeOrders(immutable)
+      {
+        //   console.log("#orders",immutable)
+          var array = _.values(immutable);
+          if( array.length )
+          {                
+              var splices = Polymer.ArraySplice.calculateSplices(array, this.orders);
+
+              // Copy content
+              this.orders.length = 0;
+              this.orders.push(...array);
+
+              // Inform Polymer about changes
+              this.notifySplices('orders', splices);               
+          }
+      
+      }
+     
+        connectedCallback() {
+            super.connectedCallback();
+            window.dev = this;
+
+            Tracker.autorun(() => {
+                Meteor.subscribe('orders',()=>this.subscribed = true);
+            });
+            // console.log('food-orders created!');
+        }
+       
+      
+
+
+    }
+
+    customElements.define(FoodOrders.is, FoodOrders);
+
+  </script>
+
+</dom-module>

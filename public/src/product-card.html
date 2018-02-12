@@ -1,0 +1,122 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+
+<link rel="import" href="categories-list.html">
+
+<!--
+`<product-card>` is Description
+
+@element product-card
+-->
+<dom-module id="product-card">
+    <template>
+        <style>
+            :host {
+                display: block;
+                padding: 24px 16px;
+
+                margin: 0 auto;
+                max-width: 460px;                            
+            }
+
+            :host paper-dropdown-menu
+            {
+                width: 100%;
+            }
+
+        </style>
+
+        <paper-toggle-button checked={{item.enabled}}>Доступен</paper-toggle-button>
+        <paper-input value={{item.name}} label="Имя продукта"></paper-input>
+        <paper-input value={{item.title}} label="Название продукта"></paper-input>
+        <paper-input value={{item.netto}} label="Вес продукта"></paper-input>
+
+        <paper-input value={{item.description}} label="Описание продукта"></paper-input>
+
+        <paper-input value={{item.price}} label="Цена" type="number"></paper-input>
+
+        <paper-dropdown-menu label="Категория" no-animations>
+            <paper-listbox slot="dropdown-content"
+                    selected={{item.category}}
+                    attr-for-selected="value">
+                    
+                    <template is="dom-repeat" items="[[categories]]">                                                                  
+                        <paper-item value="[[item.name]]">
+                            <div>[[item.name]]</div>
+                        </paper-item>
+                    </template>
+            </paper-listbox>
+        </paper-dropdown-menu>
+        <paper-input value={{item.order}} label="Приоритет" type="number"></paper-input>
+        <paper-input value={{item.image}} label="Картинка"></paper-input>
+        <!-- <paper-input value={{item.largeImage}} label="Большая картинка"></paper-input> -->
+
+    </template>
+
+    <script>
+        class ProductCard extends CategoriesList {
+
+            static get is() { return 'product-card'; }
+           
+            static get properties() {
+                return {
+                 
+                    item: {
+                        type: Object                       
+                    }
+                };
+            }
+
+            constructor() {
+                super();
+            }
+            reset()
+            {
+                this.item =  {
+                            name: "",
+                            title: "",
+                            order: 100,
+                            netto: "",
+                            description: "",
+                            image: "/products/",
+                            category: "",
+                            price: 100,
+                            enabled: 1
+                        }
+            }
+            _computeCategories(immutable)
+            {
+                // console.log("#categories",immutable)
+                if( immutable )
+                {
+                    var array = _.values(immutable);
+                    var splices = Polymer.ArraySplice.calculateSplices(array, this.categories);
+
+                    // Copy content
+                    this.categories.length = 0;
+                    this.categories.push(...array);
+
+                    // Inform Polymer about changes
+                    this.notifySplices('categories', splices);               
+                }
+            
+            }
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+        }
+
+        window.customElements.define(ProductCard.is, ProductCard);
+    </script>
+</dom-module>

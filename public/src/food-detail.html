@@ -1,0 +1,415 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../bower_components/paper-item/paper-item-body.html">
+
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">  
+
+<link rel="import" href="../bower_components/isw-dropdown-menu/isw-dropdown-menu.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="food-button.html">
+<!-- <link rel="import" href="shop-category-data.html"> -->
+<link rel="import" href="food-common-styles.html">
+<link rel="import" href="food-image.html">
+<link rel="import" href="food-select.html">
+<link rel="import" href="product-card.html">
+
+
+<dom-module id="food-detail">
+
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-positioning"></style>
+
+    <style include="food-common-styles food-button food-select">
+
+      :host {
+        display: block;
+      }
+
+      #content {
+        @apply --layout-horizontal;
+        @apply --layout-center-justified;
+      }
+
+      food-image {
+        /* position: relative; */
+        margin: 64px 32px;
+        width: 50%;
+        max-width: 600px;
+        --food-image-img: {       
+          /* width: 100%;       */
+          /* height: 100%; */
+        };
+      }
+
+      /* food-image::before {
+        content: "";
+        display: block;
+         padding-top: 60%; 
+      } */
+
+      .detail {
+        margin: 64px 32px;
+        width: 50%;
+        max-width: 400px;
+        transition: opacity 0.4s;
+        opacity: 0;
+      }
+
+      .detail[has-content] {
+        opacity: 1;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 500;
+        line-height: 28px;
+        margin: 16px 0;
+      }
+
+      .price {
+        margin: 16px 0 40px;
+        font-size: 16px;
+        color: var(--app-secondary-color);
+      }
+
+      .description {
+        margin: 32px 0;
+      }
+
+      .description > h2 {
+        margin: 16px 0;
+        font-size: 13px;
+      }
+
+      .description > p {
+        margin: 0;
+        color: var(--app-secondary-color);
+      }
+
+      .pickers {
+        @apply --layout-vertical;
+        border-top: 1px solid #ccc;
+      }
+
+      food-select > select {
+        font-size: 16px;
+        padding: 16px 24px 16px 70px;
+      }
+
+      @media (max-width: 767px) {
+
+        #content {
+          @apply --layout-vertical;
+          @apply --layout-center;
+        }
+
+        food-image {
+          margin: 0;
+          width: 100%;
+          height: 300px;
+        }
+
+        .detail {
+          box-sizing: border-box;
+          margin: 32px 0;
+          padding: 0 24px;
+          width: 100%;
+          max-width: 600px;
+        }
+
+        h1 {
+          font-size: 20px;
+          line-height: 24px;
+        }
+
+        .price {
+          font-size: inherit;
+          margin: 12px 0 0;
+        }
+
+      }
+
+      #edit
+      {
+        margin: 0;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+
+    </style>
+
+      <style>			
+				iron-icon.checkbox.checked { color: #00508C; }
+				iron-icon.checkbox.unchecked { color: var(--secondary-text-color); }
+				paper-icon-item iron-icon.checkbox.checked { display: none; }
+				paper-icon-item iron-icon.checkbox.unchecked { display: block; }
+				paper-icon-item.iron-selected iron-icon.checkbox.checked { display: block; }
+				paper-icon-item.iron-selected iron-icon.checkbox.unchecked { display: none; }
+        
+        paper-input[name=quantity] 
+        {
+          max-width: 6em;
+          --paper-input-container-input:
+          {
+            text-align: center;
+          }
+        }
+        [name="title"]
+        {
+          text-align: center;
+        }
+			</style>
+    <!--
+      app-route provides the name of the category and the item.
+    -->
+    <app-route
+        route="[[route]]"
+        pattern="/:category/:item"
+        data="{{routeData}}"></app-route>
+
+    <!--
+      shop-category-data provides the item data for a given category and item name.
+    -->
+    <paper-dialog id="edit">
+        <paper-dialog-scrollable>
+          <product-card id="product" item=[[item]]><product-card>
+        </paper-dialog-scrollable>
+        <div class="buttons">
+          <paper-button dialog-dismiss>Cancel</paper-button>
+          <paper-button dialog-confirm autofocus on-tap="_updateProduct">Update</paper-button>
+        </div>
+    </paper-dialog>
+    
+  
+    <h1 name="title" hidden$=[[!phone]]>[[item.title]]</h1>
+    
+    <div id="content" hidden$="[[failure]]">
+  
+
+      <food-image alt="[[item.title]]" src="[[image]]"></food-image>
+      
+      <div class="detail" has-content$="[[_isDefined(item)]]">
+        <h1 name="title" hidden$=[[phone]]>[[item.title]]</h1>
+
+        <div class="layout horizontal justified">
+          <div class="price">[[_formatPrice(item.price)]]<span class="netto"> / [[item.netto]]</span></div>
+          <div class="layout horizontal center">  
+            <paper-icon-button icon="remove-circle-outline" on-tap="_decQuantity"></paper-icon-button>              
+            <paper-input name="quantity" no-label-float value=[[quantity]] type="number"></paper-input>
+            <paper-icon-button icon="icons:add-circle-outline" on-tap="_incQuantity"></paper-icon-button>
+          </div>
+        </div>
+      
+        <!-- <div class="description"> -->
+        <p id="desc"></p>
+        <!-- </div> -->
+        <div class="pickers">   
+          <isw-dropdown-menu id="options" multi attr-for-selected="value" label="Добавки" hidden$=[[!item.options.length]]>
+            <template is="dom-repeat" items="[[item.options]]">
+              <paper-icon-item value$="[[item]]" label$="[[item]]">
+                <iron-icon class="checkbox unchecked" icon="check-box-outline-blank" slot="item-icon"></iron-icon>
+                <iron-icon class="checkbox checked" icon="check-box" slot="item-icon"></iron-icon>
+                <paper-item-body two-line>
+                  <div>[[item]]</div>
+                  <div secondary>[[_additionsPrice(item)]]</div>   
+                </paper-item-body>
+              </paper-icon-item>
+            </template>
+          </isw-dropdown-menu>      
+        </div>
+
+        <paper-textarea value={{item.wishes}} label="Ваши пожелания" rows="3"
+          placeholder="Особые дополнительные ингридиенты или что-то еще, чтобы мы сделали блюдо идеальным для Вас">
+        </paper-textarea>
+
+        <food-button responsive>
+          <button on-click="_addToCart" aria-label="Добавить в корзину">Добавить в корзину</button>
+        </food-button>
+      </div>
+    </div>
+
+    <!--
+      shop-network-warning shows a warning message when the items can't be rendered due
+      to network conditions.
+    -->
+    <!-- <shop-network-warning
+        hidden$="[[!failure]]"
+        offline="[[offline]]"
+        on-try-reconnect="_tryReconnect"></shop-network-warning> -->
+
+  </template>
+
+  <script>
+
+    class FoodDetail extends Polymer.Element {
+
+      static get is() { return 'food-detail'; }
+
+      static get properties() { return {
+
+        item: Object,
+        quantity: {
+          type: Number,
+          value: 1,
+        },
+        image: {
+          type: String,
+          computed: '_computeImage(item)'
+        },
+        route: Object,
+
+        routeData: Object,
+
+        visible: {
+          type: Boolean,
+          value: false
+        },
+
+        phone: {
+          type: String,
+          reflectToAttribute: true,
+          value: false
+        },
+
+        offline: {
+          type: Boolean,
+          observer: '_offlineChanged'
+        },
+
+        failure: {
+          type: Boolean,
+          value: false
+        }
+
+      }}
+      
+      _computeImage(item){
+        return item.image;
+      }
+
+      static get observers() { return [
+        '_itemChanged(item, visible)',
+        '_routeDataChanged(routeData.item)',
+      ]}
+
+      connectedCallback() {
+          super.connectedCallback();
+        window.detail = this;
+      }
+      _incQuantity()
+      {
+        this.quantity++;  
+      }
+
+      _decQuantity()
+      {
+        if(this.quantity > 1)
+          this.quantity--;
+      }
+
+      _routeDataChanged(item)
+      {
+        this.item = Products.findOne({name: item})
+      }
+      _edit()
+      {
+        this.$.edit.open();
+      }
+      _additionsPrice(name)
+      {
+        var addition = Additions.findOne({name: name});
+        if(addition)
+            return addition.price + ' руб.';
+        
+        console.log("_addidionsPrice not found", name)
+      }
+      _updateProduct()
+      {
+          var item = Object.assign( this.$.product.item, { timestamp: Date.now()})
+          Meteor.call('updateProduct', item);
+      }
+
+      _itemChanged(item, visible) {
+        if (visible) {
+          this._itemChangeDebouncer = Polymer.Debouncer.debounce(this._itemChangeDebouncer,
+            Polymer.Async.microTask, () => {
+              // The item description contains escaped HTML (e.g. "&lt;br&gt;"), so we need to
+              // unescape it ("<br>") and set it as innerHTML.
+              let text = item ? item.description : '';
+              this.$.desc.innerHTML = this._unescapeText(text);
+
+              this.quantity = '1';
+
+              this.dispatchEvent(new CustomEvent('change-section', {
+                bubbles: true, composed: true, detail: {
+                  item : item,
+                  category: item ? item.category : '',
+                  title: item ? item.title : ''
+                }}));
+            })
+        }
+      }
+
+      _unescapeText(text) {
+        let elem = document.createElement('textarea');
+        elem.innerHTML = text;
+        return elem.textContent;
+      }
+
+      _formatPrice(price) {
+        return price + ' руб.';// ? '$' + price.toFixed(2) : '';
+      }
+
+      _addToCart() {
+        // This event will be handled by shop-app.
+        this.dispatchEvent(new CustomEvent('add-cart-item', {
+          bubbles: true, composed: true, detail: {
+            item: this.item,
+            quantity: parseInt(this.quantity, 10),
+            options: this.$.options.value
+          }}));
+      }
+
+      _isDefined(item) {
+        return item != null;
+      }
+
+      _tryReconnect() {
+        // this.$.categoryData.refresh();
+      }
+
+      _offlineChanged(offline) {
+        if (!offline) {
+          this._tryReconnect();
+        }
+      }
+
+    }
+
+    customElements.define(FoodDetail.is, FoodDetail);
+
+  </script>
+
+</dom-module>

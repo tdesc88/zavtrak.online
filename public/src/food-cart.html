@@ -1,0 +1,141 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="food-button.html">
+<link rel="import" href="food-common-styles.html">
+<link rel="import" href="food-form-styles.html">
+
+<dom-module id="food-cart">
+
+  <template>
+
+    <style include="food-common-styles food-button food-form-styles">
+
+      .list {
+        margin: 40px 0;
+      }
+
+      .checkout-box {
+        font-weight: bold;
+        text-align: right;
+        margin-right: 10px;
+      }
+
+      .subtotal {
+        margin: 0 64px 0 24px;
+      }
+
+      @media (max-width: 767px) {
+
+        .subtotal {
+          margin: 0 0 0 24px;
+        }
+
+      }
+      #header
+      {
+        @apply --food-cart-header;
+      }
+      #total
+      {
+        @apply --food-cart-total;
+      }
+      :host([readonly]) #order-button
+      {
+        display: none;
+      }
+
+    </style>
+
+    <!-- <div class="main-frame"> -->
+      <div class="subsection" visible$="[[!_hasItems]]">
+        <p class="empty-cart">Ваша <iron-icon icon="shopping-cart"></iron-icon> пуста.</p>
+      </div>
+      <div class="subsection" visible$="[[_hasItems]]">
+        <header id="header">
+          <h1>Ваша корзина</h1>
+          <span>([[_getPluralizedQuantity(cart.length)]])</span>
+        </header>
+        <div class="list">
+          <dom-repeat items="[[cart]]" as="entry">
+            <template>
+              <food-cart-item entry="[[entry]]" readonly=[[readonly]]></food-cart-item>
+            </template>
+          </dom-repeat>
+        </div>
+        <div id="total" class="checkout-box">
+          Всего: <span class="subtotal">[[_formatTotal(total)]]</span>
+          <food-button id="order-button" responsive>
+            <a href="/checkout">Заказать</a>
+          </food-button>
+        </div>
+      </div>
+    <!-- </div> -->
+
+  </template>
+
+  <script>
+
+    class FoodCart extends Polymer.Element {
+
+      static get is() { return 'food-cart'; }
+
+      static get properties() { return {
+
+        total:  Number,
+      
+        cart: Array,
+
+        readonly: {
+          type: Boolean,
+          reflectToAttribute: true,
+          value: false
+        },
+
+        visible: {
+          type: Boolean,
+          observer: '_visibleChanged'
+        },
+
+        _hasItems: {
+          type: Boolean,
+          computed: '_computeHasItem(cart.length)'
+        }
+
+      }}
+
+      _formatTotal(total) {
+        return isNaN(total) ? '' : parseFloat(total).toFixed(2) + ' руб.';//'$' + total.toFixed(2);
+      }
+
+      _computeHasItem(cartLength) {
+        return cartLength > 0;
+      }
+
+      _getPluralizedQuantity(quantity) {
+        return quantity + ' ' + (quantity === 1 ? 'позиция' : 'позиций');
+      }
+
+      _visibleChanged(visible) {
+        if (visible) {
+          // Notify the section's title
+          this.dispatchEvent(new CustomEvent('change-section', {
+            bubbles: true, composed: true, detail: { title: 'Ваш заказ' }}));
+        }
+      }
+
+    }
+
+    customElements.define(FoodCart.is, FoodCart);
+
+  </script>
+
+</dom-module>

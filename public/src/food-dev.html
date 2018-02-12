@@ -1,0 +1,521 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="redux-store.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../bower_components/app-layout/app-grid/app-grid-style.html">
+
+<link rel="import" href="../bower_components/app-storage/app-localstorage/app-localstorage-document.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="collection-observer.html">
+
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+
+<!-- <link rel="import" href="sdm-request.html"> -->
+
+<!-- <link rel="import" href="food-orders.html"> -->
+<link rel="import" href="food-list-item.html">
+<!-- <link rel="import" href="categories-list-edit.html"> -->
+
+<!-- <link rel="import" href="food-order-analytics.html"> -->
+
+<!-- <link rel="import" href="admin-products.html"> -->
+
+<dom-module id="food-dev">
+
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-positioning"></style>
+    
+    <style>
+      #add
+      {
+        margin: 0;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+
+      #staff,
+      #promo,
+      #category
+      {
+        padding: 24px;
+        max-width: 320px;
+      }
+      h2[staff]
+      {
+        color: darkgreen;
+      }
+      .action-add
+      {
+        color: white;
+        margin: 24px;
+        background: var(--google-blue-700);
+      }
+      .action-logout
+      {
+        color: white;
+        background: var(--paper-red-900);
+      }
+  </style>
+ 
+      <collection-observer name="orders" subscribed></collection-observer>
+      <collection-observer name="staff" subscribed></collection-observer>
+      <collection-observer name="additions" subscribed></collection-observer>
+    
+      <div class="layout horizontal center justified">
+        <h2 staff$=[[user.staff]]>Пользователь [[user.emails.0.address]]</h2>  
+        <paper-button on-tap="_logout" class="action-logout">Разлогиниться</paper-button>
+      </div>
+      <paper-tabs selected="{{page}}" attr-for-selected="name" hidden$=[[!user.staff]]>
+          <template is="dom-repeat" items="[[tabs]]">
+              <paper-tab name=[[item.name]]><h2>[[item.title]]</h2></paper-tab>
+          </template>
+      </paper-tabs> 
+      
+    <paper-dialog id="categoryDlg">
+        <h2>Новая категория</h2>
+        <paper-dialog-scrollable >
+            <div id="category">
+                <paper-toggle-button checked={{category.enabled}}>Доступна</paper-toggle-button>
+                <paper-input value={{category.title}} placeholder="Название категории" label="Имя категории"></paper-input>
+                <paper-input value={{category.name}} placeholder="drinks, bakery, cookies..." label="Код"></paper-input>
+                <paper-input value={{category.image}} placeholder="" label="Картинка"></paper-input>
+                <paper-input value={{category.order}} label="Приоритет"></paper-input>
+            </div>
+             
+ 
+        </paper-dialog-scrollable>
+        <div class="buttons">
+          <paper-button dialog-dismiss>Отмена</paper-button>
+          <paper-button dialog-confirm autofocus on-tap="_onCategoryDelete">Удалить</paper-button>          
+          <paper-button dialog-confirm autofocus on-tap="_onCategorySave">Сохранить</paper-button>
+        </div>
+    </paper-dialog>
+
+
+    <paper-dialog id="staffDlg">
+        <h2>Новый сотрудник</h2>
+        <paper-dialog-scrollable >
+          <div id="staff">
+              <paper-input id="email" placeholder="емайл" label="Новый сотрудник"></paper-input> 
+          </div>                     
+        </paper-dialog-scrollable>
+        <div class="buttons">
+          <paper-button dialog-dismiss>Отмена</paper-button>
+          <paper-button dialog-confirm autofocus on-tap="_enrollStaff">Пригласить</paper-button>
+        </div>
+    </paper-dialog>
+
+    <paper-dialog id="promoDlg">
+        <h2>Новая скидка</h2>
+        <paper-dialog-scrollable >
+          <div id="promo">
+              <paper-input id="promoName" type="text" placeholder="код" label="Новая скидка"></paper-input> 
+              <paper-input id="discount" type="number" max="100" placeholder="скидка" label="Процент скидки"></paper-input> 
+            </div>                     
+        </paper-dialog-scrollable>
+        <div class="buttons">
+          <paper-button dialog-dismiss>Отмена</paper-button>
+          <paper-button dialog-confirm autofocus on-tap="_createPromo">Создать</paper-button>
+        </div>
+    </paper-dialog>
+
+    <paper-dialog id="replyDlg">
+        <h2>Сообщение</h2>
+        <paper-dialog-scrollable >
+          <div id="staff">
+              <paper-input id="message" placeholder="Сообщение" label="Новое сообщение"></paper-input> 
+          </div>                     
+        </paper-dialog-scrollable>
+        <div class="buttons">
+          <paper-button dialog-dismiss>Отмена</paper-button>
+          <paper-button dialog-confirm autofocus on-tap="_sendReplyMessage">Отправить</paper-button>
+        </div>
+    </paper-dialog>
+
+    <paper-dialog id="removeConfirmation" opened={{removeConfirmation}}>  
+        <h2 style="margin:0">Подтвердить удаление</h2>
+        <div class="buttons">
+            <paper-button dialog-dismiss on-tap="_rejectRemove">Отмена</paper-button>
+            <paper-button dialog-confirm autofocus on-tap="_resolveRemove">Удалить</paper-button>
+        </div>
+    </paper-dialog>
+
+
+      <iron-pages role="main" selected="[[page]]" attr-for-selected="name" selected-attribute="visible" fallback-selection="404" hidden$=[[!user.staff]]>
+        <admin-products name="products" categories=[[categories]]></admin-products>
+        <food-order-analytics name="orders" brief></food-order-analytics>  
+        <div name="payment">          
+            <sdm-request id="request"></sdm-request>
+        </div> 
+        <div name="admin">
+          <paper-button class="action-add" on-tap="_add">Новый сотрудник</paper-button>  
+              <paper-listbox 
+                  selected={{employee}}
+                  attr-for-selected="value">
+                  
+                  <template is="dom-repeat" items="[[staff]]">                                                                  
+                      <paper-item value="[[item.profile.name]]" class="layout horizontal around-justified">
+                          <div>[[item.profile.name]] [[item.emails.0.address]]</div>
+                          <paper-toggle-button checked=[[item.emails.0.notification]] on-checked-changed="_activeChanged">Нотификация</paper-toggle-button>
+                          <paper-button on-tap="_removeStaff">Удалить</paper-button>
+                      </paper-item>
+                  </template>
+              </paper-listbox>  
+          </div>
+        <div name="promo">
+          <paper-button class="action-add" on-tap="_add">Новый код</paper-button>  
+            <paper-listbox 
+                selected={{discount}}
+                attr-for-selected="value">
+                
+                <template is="dom-repeat" items="[[discounts]]">                                                                  
+                    <paper-item value="[[item.name]]">
+                        <div>[[item.name]] [[item.discount]]%</div>
+                        <paper-button on-tap="_removeDiscount">Удалить</paper-button>
+                    </paper-item>
+                </template>
+            </paper-listbox>  
+        </div>
+          
+        <div name="categories">
+            <paper-button class="action-add" on-tap="_add">Новая категория</paper-button>   
+            <categories-list-edit ></categories-list-edit> 
+        </div>
+        <div name="messages">
+          
+            <paper-listbox 
+                selected={{message}}
+                attr-for-selected="value">
+                
+                <template is="dom-repeat" items="[[messages]]">                                                                  
+                    <paper-item>
+                        <div id="user-info">[[userInfo(item)]]</div>
+                        
+                        <div>[[item.message]]</div>                    
+                        <paper-button on-tap="_replyMessage">Ответить</paper-button>
+                        <paper-button on-tap="_removeMessage">Удалить</paper-button>
+                    </paper-item>
+                </template>
+            </paper-listbox>  
+        </div>
+          
+        
+     
+      </iron-pages>
+
+
+
+    <!-- > Product ( category, type , business logic of client )
+
+    > Order ( flow , state )  - Cart = creates order, user just approve?(register)
+
+    > Delivery  ( map, delivery position, user administration / user profiles ) -->
+
+        
+  </template>
+
+  <script>
+
+  function tomacdata(fldId)
+  {
+    var str="";
+    
+    oFld = app.$.dev.shadowRoot.querySelector(("#"+fldId));
+
+    if (oFld.value.length==0) str="-";
+    else str = byteLength(oFld.value)+str2rstr_utf8(oFld.value);
+    return str;
+  }
+   const defaultCategory = {
+          title: "",
+          name: "drinks",
+          image: "/category/",
+          order: "100"
+          }; 
+
+    class FoodDev extends ReduxMixin( CategoriesList ) {
+
+
+      static get is() { return 'food-dev'; }
+
+      static get observers() {
+        return ['_pageChanged(page)']
+    }
+  
+      static get properties() { return {
+        dictionary:{
+          type: Array,
+          statePath: 'dev.dictionary'
+        },
+        payment: Object,     
+        page:{
+          type: String,
+          value: "admin"
+        },
+        user: Object,
+      
+       category:{
+        type: Object,
+        value: defaultCategory
+        },
+ 
+        staff: {
+          type: Array
+        },
+        discounts: {
+          type: Array
+        },
+        orders: {
+          type: Array,
+          statePath: "orders.items"
+        },
+
+        tabs:{
+          type: Array,
+          value : [
+            { name:"admin", title: 'Настройки', comment: "Admin tab"}, 
+            { name:"promo", title: 'Скидки', comment: "Sales tab"}, 
+            { name:"categories", title: 'Категории', comment: "Categories tab"}, 
+            { name:"products", title: 'Каталог продуктов', comment: "Products tab"},             
+            { name:"additions", title: 'Дополнения', comment: "Additions tab"}, 
+            { name:"orders", title: 'Заказы', comment: "Orders tab"}, 
+            { name:"messages", title: 'Сообщения', comment: "Messages tab"}, 		
+          ],  
+        }
+      }}
+      
+      _activeChanged(e)
+      {
+        console.log("active", e.model.item);
+        if( (!!_.where(e.model.item.emails,{notification: true}).length) != e.detail.value)
+        {
+          Meteor.call('order.toggleNotification', e.model.item._id, e.detail.value);
+        }
+      }
+
+      _rejectRemove()
+      {
+        this.$.removeConfirmation.reject()
+      }
+      
+      _resolveRemove()
+      {
+        this.$.removeConfirmation.resolve()
+      }
+
+      removeConfirm()
+      {
+          return new Promise((resolve, reject)=>{
+              
+              // workaround for backdrop shadow
+              this.$.removeConfirmation.open();
+              
+              this.$.removeConfirmation.resolve = resolve;
+              this.$.removeConfirmation.reject = reject;
+          });
+      }
+
+      userInfo(message)
+      {
+        return message.userId;
+      }
+      
+      _replyMessage(e)
+      {       
+          this.$.replyDlg.open();
+      }
+      
+      _removeMessage(e)
+      {
+        Meteor.call('removeMessage', e.model.item._id);
+      }
+
+      _sendReplyMessage()
+      {
+        // Meteor.call();
+      }
+
+      _refreshStaff()
+      {
+        this.set('staff',Meteor.users.find().fetch())
+      }
+      _logout()
+      {
+        Meteor.logout();
+
+        this.dispatchEvent(new CustomEvent('route-change', {
+                bubbles: true, composed: true, detail: {
+                  path: '/home'
+                }}));
+      }
+      _createPromo()
+      {            
+        Meteor.call("addPromoCode",this.$.promoName.value, this.$.discount.value);
+      }
+      _removeDiscount(e)
+      {   
+        this.removeConfirm().then(()=>{
+          Meteor.call("removePromo", e.model.item._id); 
+        })                 
+      }
+
+      _enrollStaff()
+      {
+        Meteor.call("enrollStaff", this.$.email.value);            
+      }
+    
+      _removeStaff(e)
+      {
+        this.removeConfirm().then(()=>{
+          Meteor.call("removeStaff", e.model.item._id);
+          Meteor.subscribe('staff',()=>this.set('staff',Meteor.users.find().fetch()));  
+        })      
+      }
+
+      isCategory(item, index, products) {
+        // console.log("#isCategory",item)
+       return item.category == this.category.name;
+      }
+     
+      // _getItemHref(item) {
+      //   // By returning null when `itemId` is undefined, the href attribute won't be set and
+      //   // the link will be disabled.
+      //   return item._id ? ['/detail', item.category, item.name].join('/') : null;
+      // }
+        connectedCallback() {
+            super.connectedCallback();
+            window.dev = this;
+            // console.log('food-dev created!');          
+       
+            if( !Meteor.user())
+            {
+              this.dispatchEvent(new CustomEvent('route-change', {
+                bubbles: true, composed: true, detail: {
+                  path: '/account'
+                }}));
+            }
+           
+            Tracker.autorun(() => {
+
+              this.user = Meteor.user();
+
+              this.subscribed = false;
+              Meteor.subscribe('categories');
+              Meteor.subscribe('products');
+              Meteor.subscribe('additions');
+              // console.log("#autorun")
+              Meteor.subscribe('staff',()=>{
+                this.set('discounts',Promo.find().fetch());
+                this.set('staff',Meteor.users.find().fetch())              
+              });
+
+              Meteor.subscribe('messages',()=>{
+                this.set('messages', Messages.find().fetch())              
+              });
+              
+            }); 
+
+            this.addEventListener('category-edit', (e)=>this._onCategoryEdit(e));
+            this.addEventListener('category-delete', (e)=>this._onCategoryDelete(e));            
+          
+      }
+      _onCategoryEdit(e)
+      { 
+        this.category = e.detail.category;
+        this.$.categoryDlg.open();
+      }
+      _onCategorySave(e)
+      {
+        if( this.category._id )
+          Meteor.call("updateCategory",this.category)
+        else
+          Meteor.call("addCategory",this.category)
+      }
+
+      _onCategoryDelete(e)
+      {
+        Meteor.call("removeCategory",e.detail.category)
+      }
+
+
+        _add()
+        {
+          if( this.page === 'admin')          
+          {       
+            this.$.staffDlg.open();
+          }
+
+          if( this.page === 'promo')          
+          {       
+            this.$.promoName.value = "";
+            this.$.discount.value = ""
+            this.$.promoDlg.open();
+          }
+
+          if( this.page === 'categories')          
+          {
+            this.category = defaultCategory;
+            this.$.categoryDlg.open();
+          }
+                                         
+        }
+      
+        _createCategory()
+        {
+          this.category.order = parseInt(this.category.order);
+
+          Meteor.call('addCategory', this.category);
+        }
+
+        _testPayment(orderId)
+        {
+          Meteor.call("_testPayment",orderId,(err,result)=>{
+              this.payment = result;
+            });
+        }
+
+        _pageChanged(page)
+        {          
+          let map = {'orders':'food-order-analytics','categories': 'categories-list-edit', 'products':'admin-products'}
+          if( map[page])
+          {
+            let path = map[page] + '.html'
+            
+            Polymer.importHref(
+              this.resolveUrl(path),
+              null, null, true);
+          }
+      
+        }
+
+
+    }
+
+    customElements.define(FoodDev.is, FoodDev);
+
+  </script>
+
+</dom-module>

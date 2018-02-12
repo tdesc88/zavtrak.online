@@ -1,0 +1,66 @@
+<link rel="import" href="redux-store.html">
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<!--
+`<categories-list>` is Description
+
+@element categories-list
+-->
+<dom-module id="categories-list">
+
+    <script>
+        class CategoriesList extends ReduxMixin(Polymer.Element) { 
+
+            static get is() { return 'categories-list'; }
+            
+            static get observers() {
+                return ['_computeCategories(immutableCategories)']
+            }
+            static get properties() {
+                return {
+                        immutableCategories: {
+                            type: Object,
+                            statePath: "categories.items"
+                        }, 
+                        categories: {
+                            type: Array,
+                            value: [],
+                        }
+                };
+            }
+
+            _computeCategories(immutable)
+            {
+                // console.log("#categories",immutable)
+                var array = _.sortBy(_.values(immutable),'order');
+                if( array.length )
+                {                
+                    var splices = Polymer.ArraySplice.calculateSplices(array, this.categories);
+
+                    // Copy content
+                    this.categories.length = 0;
+                    this.categories.push(...array);
+
+                    // Inform Polymer about changes
+                    this.notifySplices('categories', splices);               
+                }
+            
+            }
+
+            constructor() {
+                super();
+            }
+
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+        }
+
+        window.customElements.define(CategoriesList.is, CategoriesList);
+    </script>
+</dom-module>

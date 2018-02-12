@@ -1,0 +1,472 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="redux-store.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-storage/app-localstorage/app-localstorage-document.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="collection-observer.html">
+
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+
+<link rel="import" href="../bower_components/paper-styles/element-styles/paper-material-styles.html">
+
+
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="food-cart.html">
+<link rel="import" href="food-cart-item.html">
+
+
+<dom-module id="food-kitchen">
+
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-positioning"></style>
+    <style include="paper-material-shared-styles"></style>
+    <style>
+        :host {
+              display: block;
+              min-height: 100vh;
+          }
+        
+        :host paper-material[name="kitchen"],
+        :host paper-material[name="delivery"]
+        {
+            display: block;
+            padding: 24px 16px;
+            margin: 8px;
+        }
+        :host paper-material[name="kitchen"][status="cooked"] food-cart-item,
+        :host paper-material[name="kitchen"][status="delivering"] food-cart-item,
+        :host paper-material[name="kitchen"][status="closed"] food-cart-item
+        {
+            display: none;
+        }
+
+        :host paper-material[name="kitchen"][status="delivering"] paper-button,
+        :host paper-material[name="kitchen"][status="closed"] paper-button
+        {
+            display: none;
+        }
+            
+        .header h2 {
+            color: #2196F3;
+            text-transform: uppercase;
+            font-weight: 400;
+            font-size: 0.8rem;
+        }
+        
+        h2 {
+            color: darkslategray;
+            /* text-transform: uppercase; */
+            font-weight: 300;
+            font-size: 0.8rem;
+        }
+
+        paper-collapse-item
+        {
+            background: white;
+        }
+        
+        [name="order"][new] h2[name=number]
+        {
+            color: green;
+        }
+
+        [name="order"][cancelled] h2[name=number]
+        {
+            color: orange;
+        }
+
+        food-cart
+        {
+            --food-cart-header:{
+                display: none;
+            }
+        }
+
+        :host([delivery]) #kitchen
+        {
+            display: none;
+        }
+        paper-button[name=apply]
+        {
+           background: var(--paper-light-blue-500);
+           color: white;
+        }
+
+  </style>
+
+      <collection-observer name="orders" subscribed></collection-observer>
+      <collection-observer name="products" subscribed></collection-observer>
+
+      <div class="layout horizontal">
+
+        <div class="flex" id="kitchen">
+          <div name="kitchen" class="flex">Кухня [[kitchen.length]]</div>    
+          <template is="dom-repeat" items="[[kitchen]]" sort="_sortByDelivery">
+            <paper-material name="kitchen" elevation="1" status$=[[item.status]]>
+            <div class="layout horizontal justified">
+                <h2>Заказ [[item.number]]</h2><h2>[[statusName(item.status)]]</h2>                
+            </div>
+            <div class="layout horizontal justified">
+                <h2>Время для доставки</h2><h2>[[_deliveryTime(item.delivery)]]</h2> 
+                </div>
+                <div class="layout horizontal justified">
+                    <h2>[[item.address]]</h2>              
+                </div>
+            <template id="cart" is="dom-repeat" items="[[item.cart]]">
+                <food-cart-item entry=[[item]] readonly></food-cart-item>
+            </template>
+              <div class="layout horizontal justified">
+                <paper-button name="take" raised on-tap="_takeOrder" hidden$=[[hiddenTakeForStage(item.status)]]>
+                    Открыть
+                </paper-button>
+                <paper-button name="cooked" raised on-tap="_cookedOrder" hidden$=[[hiddenCookForStage(item.status)]]>
+                    Приготовлено
+                </paper-button>
+              </div>
+            </paper-material>
+          </template>
+        </div>
+        <div class="flex" id="delivery">
+          <div name="delivery" class="flex">Доставка [[delivery.length]]</div>        
+        
+         <template is="dom-repeat" items="[[deliveries]]" sort="_sortByDelivery"> 
+            <paper-material name="delivery" elevation="1">
+            <div class="layout horizontal justified">
+                    <h2>Заказ [[item.number]]</h2><h2>[[statusName(item.status)]]</h2>                
+                </div>
+                <div class="layout horizontal justified">
+                    <h2>Время для доставки</h2><h2>[[_deliveryTime(item.delivery)]]</h2> 
+                    </div>
+                    <div class="layout horizontal justified">
+                        <h2>[[item.address]]</h2>              
+                    </div>
+                    <div class="layout horizontal justified">
+                        <h2>[[item.name]]</h2>
+                        <h2>[[item.phone]]</h2>
+                    </div>                    
+                <paper-collapse-item icon="icons:payment" header="[[_deliveryPaymentStatus(item.payment,item.pay)]]">
+                    <food-cart cart="[[item.cart]]" total="[[item.total]]" readonly></food-cart>
+                    <!-- <template id="cart" is="dom-repeat" items="[[item.cart]]">
+                        <food-cart-item entry=[[item]] readonly></food-cart-item>
+                    </template>     -->
+                </paper-collapse-item>
+
+                <div id="total" class="layout vertical end">
+                    <paper-input id="promo" value={{item.promo}} hidden$=[[_paymentCompleted(item.payment,item.pay)]]
+                        type="text" label="Промокод" maxlength="8"></paper-input>
+                        <paper-button name="apply" on-tap="_applyPromo">Применить</paper-button>
+                    
+                    <div class="row total-row">
+                            
+                        <div id="discount" hidden$=[[!_hasDiscount(item.discount)]]>  
+                            Всего [[item.total]]
+                        </div>
+
+                        <div id="discount" hidden$=[[!_hasDiscount(item.discount)]]>    
+                            Скидка [[item.discount]]%
+                        </div>
+                            
+                        <div class="flex">[[_deliveryTotalLabel(item.payment,item.pay)]]</div>
+                        <div>[[_formatTotal(item.totalWithDiscount)]]</div>
+                    </div> 
+                                        
+                    <!-- <div id="discount" hidden$=[[!_hasDiscount(item.discount)]]>
+                            Скидка [[item.discount]]%
+                    </div>
+                    <div class="row total-row">
+                        <div class="flex">[[_deliveryTotalLabel(item.payment,item.pay)]]</div>
+                        <div>[[_formatTotal(item.total)]]</div>
+                    </div>   -->
+                </div>                                  
+              
+               
+                <!-- <template id="cart" is="dom-repeat" items="[[item.cart]]">
+                    <food-cart-item entry=[[item]] readonly></food-cart-item>
+                </template>                 -->          
+                <div class="layout horizontal justified">
+                        <h2>[[item.comment]]</h2>
+                    </div>     
+                <div class="layout horizontal justified">
+                    <paper-button  raised on-tap="_deliverOrder" hidden$=[[hiddenDeliverForStage(item.status)]]>
+                        Доставить
+                    </paper-button>            
+                    <paper-button raised on-tap="_closeOrder" hidden$=[[hiddenCloseForStage(item.status)]]>
+                        Закрыть
+                    </paper-button>
+                    <paper-button raised on-tap="_resetOrder">
+                        Сбросить
+                    </paper-button>
+                </paper-material>
+                </div>
+            </paper-material>            
+         </template>
+        </div>
+      </div>
+
+
+
+    <!-- > Product ( category, type , business logic of client )
+
+    > Order ( flow , state )  - Cart = creates order, user just approve?(register)
+
+    > Delivery  ( map, delivery position, user administration / user profiles ) -->
+
+        
+  </template>
+
+  <script>
+
+    const getActive = state => state.orders.active
+    const getOrders = state => state.orders
+
+    // const orderSelector = createSelector(
+    //         getActive, getOrders, (active, orders) => {
+    //             if (active) {
+    //                 return orders.act1;
+    //             }
+    //             return orders.act2;
+    //         })
+
+    class FoodKitchen extends ReduxMixin(Polymer.Element) {
+
+      static get is() { return 'food-kitchen'; }
+      static get observers() {
+                return ['_computeOrders(immutableOrders)']
+            }
+      static get properties() { return {
+        dictionary:{
+          type: Array,
+          statePath: 'dev.dictionary'
+        },     
+        // test: {
+        //     type: String,
+        //     statePath: orderSelector
+        // },    
+        immutableOrders: {
+            type: Object,
+            statePath: 'orders.items'
+            // statePath: orderSelector
+        }, 
+        orders: {
+            type: Array,
+            value: [],
+        },
+        kitchen: {
+            type: Array,
+            computed: '_computeKitchen(orders.*)',
+            value: [],
+        },
+        delivery: {
+            type: Boolean,
+            reflectToAttribute: true,
+            value: false            
+        },
+        deliveries: {
+            type: Array,
+            computed: '_computeDelivery(orders.*)',
+            value: [],
+        }
+      }}
+      _applyPromo(e)
+      {       
+        Meteor.call('applyPromo', e.model.item._id, e.model.item.promo);
+      }
+
+      _number(index)
+      {
+        return index + 1;
+      }
+      
+      _hasDiscount(discount)
+      {
+        return !!discount
+      }
+
+      _formatTotal(total) {
+
+        return isNaN(total) ? '' : parseFloat(total).toFixed(2) + ' руб.';
+      }
+
+      _sortByDelivery( a, b) {
+
+            a = new Date(a.delivery);
+            b = new Date(b.delivery);
+            return a>b ? 1 : a<b ? -1 : 0;
+        };
+
+        _deliveryTotalLabel(payment, pay)
+        {
+            return payment==="completed" ? "Оплачено": "Всего к оплате";       
+        }
+      statusName(status)
+      {
+        if(status=='new')
+        {
+            return 'Новый'
+        }
+        if(status=='delivering')
+        {
+            return 'Доставляется'
+        }
+        if(status=='closed')
+        {
+            return 'Доставлен'
+        }
+        if(status=='cooking')
+        {
+            return 'Готовится'
+        }
+        if(status=='cooked')
+        {
+            return 'Приготовлено'
+        }
+      }
+      
+      
+      _paymentCompleted(payment, pay)
+      {
+        return payment==="completed";
+      }
+
+      _deliveryPaymentStatus(payment, pay)
+      {
+        return payment==="completed" ? "Оплачено": "По доставке";
+      }
+      hiddenCloseForStage(status)
+      {
+        return status != "delivering"
+      }
+      
+      _humanReadableTime(time)
+      {
+        return fecha.format(time, 'HH:mm DD MMMM YYYY');
+      }
+
+      _deliveryTime(time)
+      {
+          if(time)
+            return this._humanReadableTime(time)
+      }
+
+      _takeOrder(e)
+      {
+          Meteor.call("openOrder",e.model.item._id);
+      }
+      _deliverOrder(e)
+      {
+          Meteor.call("deliveringOrder",e.model.item._id);
+      }
+      _cookedOrder(e)
+      {
+          Meteor.call("cookedOrder",e.model.item._id);
+      }
+      
+      _resetOrder(e)
+      {
+          Meteor.call("resetOrder",e.model.item._id);
+      }
+
+      _closeOrder(e)
+      {
+          Meteor.call("closeOrder",e.model.item._id);
+      }
+
+      _cancelOrder(e)
+      {
+          Meteor.call("cancelOrder",e.model.item._id);
+      }
+
+      _computeKitchen(splices)
+      {
+        //   console.log("#kitchen",splices)          
+          return _.filter(splices.base,(item)=>_.contains(["new","opened","cooking","cooked","delivering","closed"],item.status))
+      }
+      _computeDelivery(splices)
+      {
+        //   console.log("#delivery",splices)           
+
+          return _.filter(splices.base,(item)=>_.contains(["new","opened","cooking","delivering","cooked","closed"],item.status))
+      }
+
+      _computeOrders(immutable)
+      {
+        //   console.log("#orders",immutable)
+          var array = _.values(immutable);
+          if( array.length )
+          {                            
+              var splices = Polymer.ArraySplice.calculateSplices(array, this.orders);
+
+              // Copy content
+              this.orders.length = 0;
+              this.orders.push(...array);
+
+              // Inform Polymer about changes
+              this.notifySplices('orders', splices);               
+          }
+      
+      }
+      hiddenTakeForStage(stage)
+      {
+        return (stage == 'cooking' || stage == 'cooked') 
+      }
+      hiddenCookForStage(stage)
+      {
+        return stage == 'new' || stage == 'cooked'
+      }
+      
+      hiddenDeliverForStage(stage)
+      {
+        return stage == 'new' || stage == 'cooking' || stage == 'delivering' || stage == 'closed' 
+      }
+      
+
+        connectedCallback() {
+            super.connectedCallback();
+            window.dev = this;
+
+            Tracker.autorun(() => {
+                Meteor.subscribe('kitchen-orders');
+            });
+
+            console.log('food-kitchen created!');
+        }
+      
+        _add()
+        {
+            this.$.add.open();
+        }
+        
+        _createProduct()
+        {
+          Meteor.call('addProduct', this.$.product.item);
+        }
+
+
+    }
+
+    customElements.define(FoodKitchen.is, FoodKitchen);
+
+  </script>
+
+</dom-module>

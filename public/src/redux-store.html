@@ -1,0 +1,45 @@
+<link rel="import" href="../bower_components/polymer-redux/polymer-redux.html">
+ <script src="food-redux.js"></script> 
+
+<script>
+  // import store from '.food-redux.js'
+  // import {store} from '.food-redux.js'
+  // const initialState = {
+  //   friends: ["wow"]
+  // };§
+
+  // const reducer = (state, action) => {
+  //   if (!state) return initialState;
+
+  //   switch (action.type) {
+  //     case 'ADD_FRIEND':
+  //       const friends = [...state.friends];
+  //       friends.push(action.friend);
+  //       return Object.assign({}, state, { friends });
+  //   }
+  // };
+
+// import { Tracker } from 'meteor/tracker';
+// import { applyMiddleware, createStore, compose } from 'redux';
+// import createReactiveMiddlewares from 'meteor-redux-middlewares';
+// import thunk from 'redux-thunk';
+// import { createLogger } from 'redux-logger';
+
+// import rootReducer from './reducers';
+
+// const {
+//   sources,
+//   subscriptions,
+// } = createReactiveMiddlewares(Tracker);
+
+// const logger = createLogger();
+
+// const store = createStore(rootReducer, compose(
+//   applyMiddleware(sources, subscriptions, thunk, logger),
+//   window.devToolsExtension ? window.devToolsExtension() : f => f
+// ));
+
+  // const store = Redux.createStore(reducer);
+  // console.log("#store",zero,store);
+  const ReduxMixin = PolymerRedux(FoodMeRedux.store);
+</script>

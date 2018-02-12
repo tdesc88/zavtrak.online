@@ -1,0 +1,190 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<!-- <link rel="import" href="../bower_components/iron-icons/iron-icons.html"> -->
+
+<link rel="import" href="categories-list.html">
+<link rel="import" href="food-button.html">
+<link rel="import" href="food-image.html">
+
+<dom-module id="food-home">
+
+  <template>
+
+    <style include="food-button">
+
+      .image-link {
+        outline: none;
+      }
+
+      .image-link > food-image::after {
+        display: block;
+        content: '';
+        position: absolute;
+        transition-property: opacity;
+        transition-duration: 0s;
+        transition-delay: 90ms;
+        pointer-events: none;
+        opacity: 0;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
+        outline: #2196F3 auto 5px;
+        outline: -moz-mac-focusring auto 5px;
+        outline: -webkit-focus-ring-color auto 5px;
+      }
+
+      .image-link:focus > food-image::after {
+        opacity: 1;
+      }
+
+      .item food-button
+      {
+        margin: 16px 0;
+      }
+
+      .item {
+        display: block;
+        text-decoration: none;
+        text-align: center;
+      }
+
+      /* .item:nth-of-type(3),
+      .item:nth-of-type(4) {
+        display: inline-block;
+        width: 50%;
+      } */
+
+      food-image {
+        position: relative;
+        height: 320px;
+        overflow: hidden;
+        --food-image-img: {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: -9999px;
+          right: -9999px;
+          max-width: none;
+        };
+      }
+
+      h2 {
+        font-size: 1.3em;
+        font-weight: 500;
+        margin: 16px 0;
+      }
+
+      .item:nth-of-type(3) > h2,
+      .item:nth-of-type(4) > h2 {
+        font-size: 1.1em;
+      }
+
+      @media (max-width: 1140px) {
+        food-image {
+          height: 280px;
+        }     
+      }
+
+      @media (max-width: 765px) {
+        food-image {
+          height: 260px;
+        }
+        
+        h2 {
+          margin: 24px 0;
+        }
+
+        .item:nth-of-type(3) > food-button > a,
+        .item:nth-of-type(4) > food-button > a {
+          padding: 8px 24px;
+        }
+      }
+
+      @media (max-width: 667px) {
+        food-image {
+          height: 200px;
+        }
+        
+        food-image img
+        {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 480px) {
+        food-image {
+          height: 90px;
+        }
+      }
+
+
+    </style>
+    <collection-observer name="categories" subscribed=[[subscribed]]></collection-observer>
+    
+    <dom-repeat items="[[categories]]">
+      <template strip-whitespace>
+        <div class="item">
+          <a class="image-link" href$="/list/[[item.name]]">
+            <food-image src="[[item.image]]" alt="[[item.title]]" placeholder-img="[[item.placeholder]]" wide=[[wide]] cover></food-image>
+          </a>
+          <!-- <h2>[[item.title]]</h2> -->
+          <food-button>
+            <a aria-label$="[[item.title]] Закажите сейчас" href$="/list/[[item.name]]">Закажите сейчас</a>
+          </food-button>
+        </div>
+      </template>
+    </dom-repeat>
+
+  </template>
+
+  <script>
+
+    class FoodHome extends CategoriesList {
+
+      static get is() { return 'food-home'; }
+
+      static get properties() { return {
+
+        wide: Boolean,
+
+        visible: {
+          type: Boolean,
+          observer: '_visibleChanged'
+        }
+
+      }}
+     
+      connectedCallback() {
+        super.connectedCallback();
+        window.dev = this;
+  
+        Tracker.autorun(() => {
+          this.subscribed = false;
+          Meteor.subscribe('categories',()=>this.subscribed = true);
+        });
+      }
+
+      _visibleChanged(visible) {
+        if (visible) {
+          this.dispatchEvent(new CustomEvent('change-section', {
+            bubbles: true, composed: true, detail: {title: 'Home'}}));
+        }
+      }
+
+    }
+
+    customElements.define(FoodHome.is, FoodHome);
+
+  </script>
+
+</dom-module>

@@ -1,0 +1,340 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<!-- <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html"> -->
+<!-- <link rel="import" href="shop-category-data.html"> -->
+<link rel="import" href="food-common-styles.html">
+<link rel="import" href="food-button.html"> 
+ <link rel="import" href="food-image.html"> 
+ <link rel="import" href="food-list-item.html"> 
+ 
+<link rel="import" href="collection-observer.html">
+
+<dom-module id="food-list">
+
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factor"></style>
+      
+    <style include="food-button">
+
+      :host food-button
+      {
+        margin-top: 12px; 
+        display: block;
+        position: relative!important;
+      }
+
+      :host food-button > * 
+      {
+        margin: auto;
+        display: block;
+
+      }
+      food-button[responsive] > * {
+          padding: 20px;
+          width: auto;
+      }
+    
+    </style>
+          
+    <style include="food-common-styles">
+
+      .hero-image {
+        position: relative;
+        height: 300px;
+        overflow: hidden;
+        margin-bottom: 32px;
+      }
+
+      .hero-image {
+        position: relative;
+        height: 320px;
+        overflow: hidden;
+        --food-image-img: {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: -9999px;
+          right: -9999px;
+          max-width: none;
+        };
+      }
+
+      .grid {
+        @apply --layout-horizontal;
+        @apply --layout-wrap;
+        @apply --layout-justified;
+        margin: 0 10px 32px 10px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .grid li {
+        -webkit-flex: 1 1;
+        flex: 1 1;
+        -webkit-flex-basis: 33%;
+        flex-basis: 33%;
+        max-width: 33%;
+      }
+
+      .grid a {
+        display:block;
+        text-decoration: none;
+      }
+      #info
+      {
+        padding: 8px 16px;
+        @apply --layout-horizontal;
+        @apply --layout-around-justified;
+      }
+
+      @media (max-width: 767px) {
+        :host {
+          --food-image-img: {
+            margin: 0;
+          }
+        }
+
+        .hero-image {
+          display: none;
+        }
+          .grid
+          {
+            margin: 0;
+          }
+         .grid  li {
+          -webkit-flex-basis: 100%;
+          flex-basis: 100%;
+          max-width: 100%;
+        }  
+        
+        button[name="add"]
+        {
+          padding: 6px 24px;
+          margin: 4px;
+          font-size: 14px;
+          background: white;
+          border: 2px solid linen;
+        }
+      
+        #info
+        {
+          padding: 0 16px;
+          @apply --layout-horizontal;
+          @apply --layout-justified;
+        }
+
+        .price
+        {
+          margin-left: 16px;
+        }
+        button > iron-icon
+        {
+          margin-left: 6px;
+        }
+      }
+
+    </style>
+
+    <!--
+      app-route provides the name of the category.
+    -->
+     <app-route
+        route="[[route]]"
+        pattern="/:category"
+        data="{{routeData}}"></app-route> 
+
+    <!--
+      shop-category-data provides the category data for a given category name.
+    -->
+    <collection-observer name="products" subscribed=[[subscribed]]></collection-observer>
+    <collection-observer name="additions" subscribed=[[subscribed]]></collection-observer>
+
+    <food-image
+        alt="[[category.title]]"
+        src="[[category.image]]"
+        cover
+        wide=[[wide]]
+        placeholder-img="[[category.placeholder]]" class="hero-image"></food-image> 
+
+     <header>
+      <h1>[[category.title]]</h1>
+      <span>[[_getPluralizedQuantity(category.items.length)]]</span>
+    </header> 
+      
+      <ul class="grid" hidden$="[[failure]]">
+      <dom-repeat items="[[_getListItems(category.name,subscribed)]]" initial-count="4">
+        <template>
+          <li>
+            <a href$="[[_getItemHref(item)]]"><food-list-item item="[[item]]"></food-list-item></a>
+            <div id="info" class="layout horizontal justified center">
+                <div class="price">[[_formatPrice(item.price)]]<span class="netto"> / [[item.netto]]</span></div>      
+                <button name="add" on-tap="_addToCart" aria-label="Добавить в корзину">Добавить в<iron-icon icon="shopping-cart"></iron-icon></button>
+            </div>
+
+          </li>
+        </template>
+      </dom-repeat>
+    </ul>  
+
+    <!--
+      shop-network-warning shows a warning message when the items can't be rendered due
+      to network conditions.
+    -->
+      <!-- <shop-network-warning
+        hidden$="[[!failure]]"
+        offline="[[offline]]"
+        on-try-reconnect="_tryReconnect"></shop-network-warning>   -->
+
+  </template>
+
+  <script>
+
+    class FoodList extends Polymer.Element {
+
+      static get is() { return 'food-list'; }
+
+      static get properties() { return {
+        
+        wide: Boolean,
+
+        category: Object,
+
+        route: Object,
+
+        routeData: Object,
+
+        visible: {
+          type: Boolean,
+          value: false
+        },
+
+        offline: {
+          type: Boolean,
+          observer: '_offlineChanged'
+        },
+
+        failure: Boolean
+
+      }}
+
+      static get observers() { return [
+        '_routeDataChanged(routeData.category)',
+        '_categoryChanged(category, visible)'
+      ]}
+
+      _addToCart(e) {
+        
+        //2d0
+        //move to app with event
+
+        app.$.cart.addItem({
+            item: e.model.item,
+            quantity: parseInt(1, 10),
+        });
+
+        app._showSnackbar(e.model.item.title + " " + "добавлен в корзину")
+
+        // This event will be handled by shop-app.
+        // this.dispatchEvent(new CustomEvent('add-cart-item', {
+        //   bubbles: true, composed: true, detail: {
+        //     item: e.model.item,
+        //     quantity: parseInt(1, 10),
+        //     // options: this.$.options.value
+        //   }}));
+      }
+
+      _formatPrice(price) {
+        return price + ' руб.';// ? '$' + price.toFixed(2) : '';
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this.isAttached = true;      
+        window.foodlist = this;
+      }
+
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        this.isAttached = false;
+      }
+
+      _getListItems(category) {
+        // Return placeholder items when the items haven't loaded yet.
+        if( category === 'favorites')
+        {
+          var productIds = _.pluck(Favorites.find().fetch(), 'productId');
+
+          return Products.find({_id: {$in: productIds}}).fetch();
+        }
+        return Products.find({category: category}).fetch() || [{},{},{},{},{},{},{},{},{},{}];
+      }
+
+      _getItemHref(item) {
+        // By returning null when `itemId` is undefined, the href attribute won't be set and
+        // the link will be disabled.
+        return item.name ? ['/detail', this.category.name, item.name].join('/') : null;
+      }
+
+      _getPluralizedQuantity(quantity) {
+        if (!quantity) {
+          return '';
+        }
+        let pluralizedQ = quantity === 1 ? 'item' : 'items';
+        return  '(' + quantity + ' ' + pluralizedQ + ')';
+      }
+      
+      _routeDataChanged(category)
+      {
+        this.category = Categories.findOne({name: category})
+      }
+
+      _categoryChanged(category, visible) {
+        if (!visible) {
+          return;
+        }
+        this._changeSectionDebouncer = Polymer.Debouncer.debounce(this._changeSectionDebouncer,
+          Polymer.Async.microTask, () => {            
+            if (category) {
+              // Notify the category and the page's title
+              this.dispatchEvent(new CustomEvent('change-section', {
+                bubbles: true, composed: true, detail: {
+                  category: category.name,
+                  title: category.title
+                }}));
+            } else {
+              this.dispatchEvent(new CustomEvent('show-invalid-url-warning', {
+                bubbles: true, composed: true}));
+            }
+          });
+      }
+
+      _tryReconnect() {
+        // this.$.categoryData.refresh();
+      }
+
+      _offlineChanged(offline) {
+        if (!offline && this.isAttached) {
+          this._tryReconnect();
+        }
+      }
+
+    }
+
+    customElements.define(FoodList.is, FoodList);
+
+  </script>
+
+</dom-module>

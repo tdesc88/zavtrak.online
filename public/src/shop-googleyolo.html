@@ -1,0 +1,266 @@
+<!--
+@license
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../bower_components/iron-meta/iron-meta.html">
+<script src="https://smartlock.google.com/client" async defer></script>
+
+<dom-module id="shop-googleyolo">
+
+  <script>
+    var SIGNUP = 'signup';
+    var PASSWORD = 'password';
+    var GOOGLE = 'https://accounts.google.com';
+
+    Polymer({
+
+      is: 'shop-googleyolo',
+
+      properties: {
+        profile: {
+          type: Object,
+          value: null,
+          notify: true
+        }
+      },
+
+      ready: function() {
+        var that = this;
+        console.log("shop-googleyolo - ready");
+        
+        new Polymer.IronMeta({type: 'account', key: 'account', value: this});
+        this._initializeProfile();
+        if (!window.googleyolo) {
+          window.onGoogleYoloLoad = function() {
+console.log('ready now.')
+            that.fire('account-ready');
+          };
+        } else {
+console.log('already ready.')
+          that.fire('account-ready');
+        }
+      },
+
+      isSignedIn: function() {
+        return !!this.profile.id;
+      },
+
+      setProfile: function(profile) {
+        // Set profile
+        this.profile = {
+          name:     profile.name,
+          id:       profile.id,
+          iconURL:  profile.imageUrl,
+          email:    profile.email
+        };
+      },
+
+      _initializeProfile: function() {
+        // Init profile
+        this.profile = {
+          name:     '',
+          id:       '',
+          iconURL:  '',
+          email:    ''
+        };
+      },
+
+      autoSignIn: function() {
+        var that = this;
+        return googleyolo.retrieve({
+          supportedAuthMethods: [
+            'https://accounts.google.com',
+            'googleyolo://id-and-password'
+          ],
+          supportedIdTokenProviders: [{
+            uri: 'https://accounts.google.com',
+            clientId: '637396873160-aeudb49aspoq608dffpg72earpj47qts.apps.googleusercontent.com'
+          }]
+        }).then(function(cred) {
+          if (cred.type === 'password') {
+            return that._loginWithServer(PASSWORD, cred)
+          } else {
+            var form = new FormData();
+            form.append('id_token', cred.idToken);
+            return that._loginWithServer(GOOGLE, form);
+          }
+        }).then(function(profile) {
+          if (profile) {
+            that.setProfile(profile);
+            return Promise.resolve(profile);
+          } else {
+            return Promise.resolve();
+          }
+        }).catch(function(err) {
+          that._initializeProfile();
+          return Promise.reject(err);
+        })
+      },
+
+      signUp: function() {
+        var that = this;
+        return googleyolo.hint({
+          supportedAuthMethods: [
+            'https://accounts.google.com'
+          ],
+          supportedIdTokenProviders: [{
+            uri: 'https://accounts.google.com',
+            clientId: '637396873160-aeudb49aspoq608dffpg72earpj47qts.apps.googleusercontent.com'
+          }],
+          context: 'signUp'
+        }).then(function(cred) {
+          if (cred.idToken) {
+            var form = new FormData();
+            form.append('id_token', cred.idToken);
+            return that._loginWithServer(GOOGLE, form);
+          } else {
+            return Promise.reject();
+          }
+        }).then(function(profile) {
+          if (profile) {
+            that.setProfile(profile);
+          }
+          return Promise.resolve(profile);
+        }).catch(function(err) {
+          that._initializeProfile();
+          return Promise.reject(err);
+        });
+      },
+
+      pSignIn: function(form) {
+        var that = this;
+        return this._loginWithServer(PASSWORD, form)
+        .then(function(profile) {
+          that.setProfile(profile);
+          if (navigator.credentials) {
+            var email = form.get('email');
+            var password = form.get('password');
+            var cred = new PasswordCredential({
+              id:       email,
+              password: password
+            });
+            // Credential stored
+            return navigator.credentials.store(cred);
+         }
+       });
+      },
+
+      pSignUp: function(form) {
+        var that = this;
+        return this._loginWithServer(SIGNUP, form)
+        .then(function(profile) {
+          that.setProfile(profile);
+          if (navigator.credentials) {
+            var email = form.get('email');
+            var password = form.get('password');
+            var cred = new PasswordCredential({
+              id:       email,
+              password: password
+            });
+            // Credential stored
+            return navigator.credentials.store(cred);
+          }
+        });
+      },
+
+      gSignIn: function(id) {
+        var that = this;
+        return (function() {
+          var auth2 = gapi.auth2.getAuthInstance();
+          if (auth2.isSignedIn.get()) {
+            var googleUser = auth2.currentUser.get();
+            if (googleUser.getBasicProfile().getEmail() === id) {
+              return Promise.resolve(googleUser);
+            }
+          }
+          return auth2.signIn({
+            login_hint: id || ''
+          });
+        })().then(function(googleUser) {
+          var form = new FormData();
+          form.append('id_token', googleUser.getAuthResponse().id_token);
+          form.append('csrf_token', Polymer.dom(document).querySelector('#csrf_token').value);
+          return that._loginWithServer(GOOGLE, form);
+        }).then(function(profile) {
+          if (profile) {
+            that.setProfile(profile);
+            if (navigator.credentials) {
+              // Signed in with Google Account
+              var cred = new FederatedCredential({
+                id:       profile.email,
+                name:     profile.name,
+                iconURL:  profile.imageUrl,
+                provider: GOOGLE
+              });
+              navigator.credentials.store(cred);
+            }
+          }
+          return Promise.resolve(profile);
+        });
+      },
+
+      _loginWithServer: function(type, cred) {
+        var opt, path;
+        // Attempting sign in with Server
+        switch (type) {
+          case GOOGLE:
+            path = '/auth/google';
+            break;
+          case SIGNUP:
+            path = '/register';
+            break;
+          default:
+            path = '/auth/password';
+            break;
+        }
+        var el = Polymer.dom(document).querySelector('#csrf_token');
+
+        var csrf_token = el? el.value: '637396873160-aeudb49aspoq608dffpg72earpj47qts.apps.googleusercontent.com';
+        if (cred instanceof FormData) {
+          cred.append('csrf_token', csrf_token);
+          opt = {
+            method: 'POST',
+            credentials: 'include',
+            body: cred
+          }
+        } else {
+          cred.additionalData = new FormData();
+          cred.additionalData.append('csrf_token', csrf_token);
+          cred.idName = 'email';
+          opt = {
+            method: 'POST',
+            credentials: cred
+          }
+        }
+
+        return fetch(path, opt)
+        .then(function(res) {
+          if (res.status === 200) {
+            // Server authentication succeeded
+            return res.json();
+          } else {
+            // Server authentication failed
+            return Promise.reject('Authentication failed');
+          }
+        });
+      },
+
+      logout: function() {
+        googleyolo.disableAutoSignIn();
+        this._initializeProfile();
+        return Promise.resolve();
+      }
+
+    });
+
+  </script>
+
+</dom-module>

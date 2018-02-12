@@ -1,0 +1,114 @@
+<link rel="import" href="redux-store.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<!--
+`<ollection>` is Description
+
+@element ollection
+-->
+<dom-module id="collection-observer">
+ 
+    <script>
+        // 'COLLECTION_ADDED','COLLECTION_CHANGED','COLLECTION_REMOVED'
+        class CollectionObserver extends ReduxMixin(Polymer.Element) {
+
+            static get is() { return 'collection-observer'; }
+            
+            static get properties() {
+                return {
+                    name: {
+                        type: String                        
+                    },
+                    query: {
+                        type: Object,
+                        value: {}
+                    },
+                    subscribed: Boolean,
+                    liveCollection: {
+                        type: Object
+                    }
+
+                };
+            }
+            static get observers() { return [
+                '_observeCollectionChanged(name,query,subscribed)'
+            ]}
+            constructor() {
+                super();
+            }
+
+            ready() {
+                super.ready();
+                
+                // let collection = Meteor.Collection.get(this.name);
+
+                // this.dispatch({
+                //     type: "SET_COLLECTION", 
+                //     name: this.name,
+                //     items: collection.find().fetch()
+                // }); 
+
+                // Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                // });
+            }
+            _observeCollectionChanged(name,query,subscribed)
+            {                                
+                if(name && subscribed)
+                {
+                    let store = this;
+                    let collection = Meteor.Collection.get(name);
+                    if(!collection)
+                    {
+                        console.warn("@collection not found:", name)  
+                        return;      
+                    }
+                    
+                    var items = {}
+                    _.each(collection.find(query).fetch(),(el)=>items[el._id]=el)
+
+                    this.dispatch({
+                        type: "SET_COLLECTION", 
+                        name: this.name,
+                        items: items
+                    }); 
+
+                    this.liveCollection = collection.find(query).observeChanges({
+                        added(id,fields){                   
+                            store.dispatch({
+                                type: "COLLECTION_ADDED", 
+                                name: store.name,
+                                id: id,
+                                fields: fields });                                                             
+                        },
+                        removed(id)
+                        {      
+                            store.dispatch({
+                                type: "COLLECTION_REMOVED", 
+                                name: store.name,
+                                id: id
+                            });             
+                        },
+                        changed(id, fields) {
+                            store.dispatch({
+                                type: "COLLECTION_CHANGED", 
+                                name: store.name,
+                                id: id,
+                                fields: fields
+                            }); 
+                        }
+                    });
+                    
+                }
+            }
+            disconnectedCallback()
+            {
+                super.disconnectedCallback();
+                if( this.liveCollection )
+                    this.liveCollection.stop();
+            }
+        }
+
+        window.customElements.define(CollectionObserver.is, CollectionObserver);
+    </script>
+</dom-module>

@@ -1,0 +1,99 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<dom-module id="sdm-request">
+
+  <template>
+        <form id="form" ACTION="https://3ds.sdm.ru/cgi-bin/cgi_link" METHOD="POST">
+          
+        <input TYPE="TEXT" NAME="AMOUNT" ID="AMOUNT" VALUE="[[payment.amount]]"></input>
+        <input TYPE="TEXT" NAME="CURRENCY" ID="CURRENCY" VALUE="[[payment.currency]]" ></input>
+        <input TYPE="TEXT" NAME="ORDER" ID="ORDER" VALUE="[[payment.order]]"></input>
+        <input TYPE="TEXT" NAME="DESC" ID="DESC" VALUE="[[payment.desc]]"></input>
+        <input TYPE="TEXT" NAME="TERMINAL" ID="TERMINAL" VALUE="[[payment.terminal]]"></input>
+        <input TYPE="TEXT" NAME="TRTYPE" ID="TRTYPE" VALUE="[[payment.trtype]]" ></input>
+        <input TYPE="TEXT" NAME="MERCH_NAME" ID="MERCH_NAME" VALUE="[[payment.merch_name]]"></input>
+        <input TYPE="TEXT" NAME="MERCH_URL" ID="MERCH_URL" VALUE="[[payment.merch_url]]" ></input>
+        <input TYPE="TEXT" NAME="MERCHANT" ID="MERCHANT" VALUE="[[payment.merchant]]" ></input>
+        <input TYPE="TEXT" NAME="EMAIL" ID="EMAIL"  VALUE="[[payment.email]]"></input>
+        <input TYPE="TEXT" NAME="TIMESTAMP" ID="TIMESTAMP"  VALUE="[[payment.timestamp]]" ></input>
+        <input TYPE="TEXT" NAME="MERCH_GMT" ID="MERCH_GMT" VALUE="[[payment.merch_gmt]]"></input>
+        <input TYPE="TEXT" NAME="NONCE" ID="NONCE"  VALUE="[[payment.nonce]]" ></input>
+        <input TYPE="TEXT" NAME="BACKREF" ID="BACKREF" VALUE="[[payment.backref]]" ></input>
+        <input TYPE="TEXT" NAME="P_SIGN" VALUE="[[payment.p_sign]]" ></input>
+        <input TYPE="TEXT" NAME="MAC_DATA" VALUE="[[payment.mac_data]]" ></input>
+        <input TYPE="TEXT" NAME="MAC"  VALUE="[[payment.mac]]"></input>
+        </form>
+                
+        <!-- <h1>mac: <span>[[payment.mac_data]]</span></h1>
+        <h1>KEY:<span>[[KEY]]</span></h1>
+        <h1>PSign test computed: <span>[[computePSign(payment.mac_data, KEY)]]</span></h1>
+        <h1>PSign payment: <span>[[payment.p_sign]]</span></h1> -->
+
+        <!-- <paper-button on-tap="submit">submit</paper-button> -->
+  </template>
+
+  <script>
+
+    class SdmRequest extends Polymer.Element {
+
+      static get is() { return 'sdm-request'; }
+
+      static get properties() { return {
+
+        payment: Object,
+        // KEY: {
+        //   type: String,
+        //   value: "466B3FE46B9D6030B322EEFAB03BE966" 
+        //   }
+        
+        }
+      }
+
+        // computePSign(mac, KEY)
+        // {
+        //   if(mac)
+        //     return hex_hmac_sha1(hex2bin(KEY),mac);
+        // }
+
+        connectedCallback() {
+            super.connectedCallback();
+            // console.log('food-dev created!');
+        }
+
+        proceedPayment(orderId)
+        {
+          return new Promise((resolve,reject)=>{
+            Meteor.call("processPayment",orderId,(err,result)=>{
+              if(!err)
+              {
+                this.payment = result;
+                this.$.form.submit();
+                resolve()
+              }else{
+                reject(err);
+              }          
+            });
+          })
+          
+        }
+        submit()
+        {
+          this.$.form.submit()
+        }
+
+    }
+
+    customElements.define(SdmRequest.is, SdmRequest);
+
+  </script>
+
+</dom-module>

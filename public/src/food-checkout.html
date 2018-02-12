@@ -1,0 +1,1158 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<!-- <link rel="import" href="se-time-input.html"> -->
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="../bower_components/paper-radio-group/paper-radio-group.html">
+
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<!-- <link rel="import" href="../bower_components/paper-time-input/paper-time-input.html"> -->
+<link rel="import" href="../bower_components/geo-location/geo-location.html">
+
+<link rel="import" href="../bower_components/paper-styles/element-styles/paper-material-styles.html">
+<link rel="import" href="../bower_components/app-storage/app-localstorage/app-localstorage-document.html">
+
+<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&coordorder=longlat&csp=true" type="text/javascript"></script>
+
+<link rel="import" href="sdm-request.html">
+
+<link rel="import" href="food-cart.html">
+
+<link rel="import" href="food-button.html">
+<link rel="import" href="food-common-styles.html">
+<link rel="import" href="food-form-styles.html">
+<link rel="import" href="food-input.html">
+<link rel="import" href="food-select.html">
+<link rel="import" href="shop-checkbox.html">
+<link rel="import" href="food-image.html">
+
+<dom-module id="food-checkout">
+
+  <template>
+
+    <custom-style>
+        <style is="custom-style" include="paper-material-styles">
+          .paper-material {
+            padding: 16px;
+            margin: 0;
+            display: inline-block;
+          }
+        </style>
+      </custom-style>
+
+    <style include="food-common-styles food-button food-form-styles food-input food-select shop-checkbox">
+
+      /* :host #accountInfoHeading
+      {
+          margin: 0 0 12px 0;    
+      } */
+      
+      .main-frame {
+        transition: opacity 0.5s;
+      }
+
+      :host([waiting]) .main-frame {
+        opacity: 0.1;
+      }
+
+      food-input, food-select {
+        margin: 12px 0;
+        font-size: 14px;
+      }
+
+      /* food-select {
+        margin-bottom: 20px;
+      } */
+
+      paper-spinner-lite {
+        position: fixed;
+        top: calc(50% - 14px);
+        left: calc(50% - 14px);
+      }
+
+      .billing-address-picker {
+        margin: 28px 0;
+        height: 20px;
+        @apply --layout-horizontal;
+      }
+
+      .billing-address-picker > label {
+        margin-left: 12px;
+      }
+
+      .grid {
+        margin-top: 40px;
+        @apply --layout-horizontal;
+      }
+
+      .grid > section {
+        @apply --layout-flex;
+      }
+
+      .grid > section:not(:first-child) {
+        margin-left: 80px;
+      }
+
+      .row {
+        @apply --layout-horizontal;
+        @apply --layout-end;
+      }
+
+      .column {
+        @apply --layout-vertical;
+      }
+
+      .row > .flex,
+      .input-row > * {
+        @apply --layout-flex;
+      }
+
+      .input-row > *:not(:first-child) {
+        margin-left: 8px;
+      }
+
+      .food-select-label {
+        line-height: 20px;
+      }
+
+      .order-summary-row {
+        line-height: 24px;
+      }
+
+      .total-row {
+        font-weight: 500;
+        margin: 30px 0;
+      }
+
+      @media (max-width: 767px) {
+
+        .grid {
+          display: block;
+          margin-top: 0;
+        }
+
+        .grid > section:not(:first-child) {
+          margin-left: 0;
+        }
+
+      }
+
+      food-image {
+        position: relative;
+        width: 100%;
+        height: 340px;
+        /* max-width: 600px; */
+        --food-image-img: {
+          @apply --layout-fit;
+        };
+      }
+      
+      input[type=time] + span {
+        padding-right: 30px;
+      }
+
+      input[type=time]:invalid+span:after {
+        position: absolute;
+        content: '✖';
+        padding-left: 5px;
+      }
+
+      input[type=time]:valid+span:after {
+        position: absolute;
+        content: '✓';
+        padding-left: 5px;
+      }
+      :host([big]) food-cart
+      {
+        max-height: 380px;
+        overflow: auto;
+      }
+      #total
+      { 
+        font-weight: bold;
+        text-align: right;
+        margin: 0 24px;
+      }
+      #checkoutForm
+      {
+        padding: 24px;
+      }
+      
+      food-cart
+      {
+        --food-cart-header: {
+          display: none;
+        };
+  
+        --food-cart-total: {
+          display: none;
+        };
+      }
+
+ 
+      #time
+      {
+        font-size: 22px;
+        max-width: 6em;
+      }
+
+      .required
+      {
+        color: var(--paper-red-a400);
+      }
+
+      #promo
+      {
+        max-width: 6.5em;
+      }
+
+      #discount
+      {
+        text-align: right;
+      }
+
+      #wrap
+       {
+            position: relative;
+            width: 100%;
+            height: 320px;
+
+            overflow: hidden;
+       }
+
+       #map{
+            width: 100%; 
+            height: 100%; 
+            padding: 0; 
+            margin: 0;
+       }
+
+       iron-icon.delivery
+       {
+           margin: 0 16px;
+       }
+          
+      paper-button[name=delivery]
+      {
+        width: 100%;
+      }
+
+    </style>
+  <!-- on-iron-form-response="_didReceiveResponse"
+              on-iron-form-presubmit="_willSendRequest" -->
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-flex-reverse"></style>
+    
+    <geo-location latitude="{{latitude}}" longitude="{{longitude}}"></geo-location>
+    <app-localstorage-document key="order-checkout" data="{{number}}"></app-localstorage-document>
+
+    <div class="checkout-frame">
+      <div hidden$=[[_hiddenCartForState(state)]]>
+        <paper-collapse-item icon="icons:shopping-cart" header="Ваша корзина ([[_getPluralizedQuantity(numItems)]])" hidden$=[[!__boolean(numItems)]] opened=[[_openedForState(state)]]>
+          <food-cart cart="[[cart]]" total="[[total]]"></food-cart>
+        </paper-collapse-item>
+        
+        <food-cart cart="[[cart]]" total="[[total]]" hidden$=[[__boolean(numItems)]]></food-cart>
+  
+        <div id="total" class="layout vertical end">
+            <paper-input id="promo" value={{promo}} type="text" label="Промокод" maxlength="14"></paper-input>
+            <div id="discount" hidden$=[[!_hasDiscount(discount)]]>
+                Скидка [[discount]]%
+            </div>
+            Всего: <span class="subtotal">[[_formatTotal(total, discount)]]</span>
+        </div>
+       
+      </div>
+    
+
+      <iron-pages id="pages" selected="[[state]]" attr-for-selected="state">
+        <div state="init">
+            
+          <iron-form id="checkoutForm">
+            <form>
+              <!-- <div class="subsection" visible$="[[!_hasItems]]">
+                <p class="empty-cart">Ваша <iron-icon icon="shopping-cart"></iron-icon> пуста.</p>
+              </div> -->
+
+              <div class="subsection grid" visible$="[[_hasItems]]">
+                <section>    
+                    <paper-button name="delivery" on-tap="toggle">
+                        <iron-icon class="delivery" icon="icons:shopping-basket"></iron-icon>
+                        Карта доставки по районам
+                        <iron-icon class="delivery" icon="[[_icon_collapse(opened)]]"></iron-icon>
+                    </paper-button>        
+                    <iron-collapse id="collapse" opened={{opened}}>
+                        <div id="wrap">
+                            <div id="map"></div>                           
+                        </div>
+                    </iron-collapse>            
+                    <div class="layout horizontal justified">    
+                      <h2 id="accountInfoHeading">Информация о заказе</h2>  
+                    </div>                              
+
+                    <div class="row input-row">
+                        <food-input>
+                            <input
+                                id="address" type="text" value=[[deliveryAddress]]
+                                placeholder="Адрес доставки с номером квартиры" required  pattern=".{5,}"                  
+                                aria-labelledby="deliveryAdressLabel accountInfoHeading">
+                          <food-md-decorator  error-message="Укажите адрес" aria-hidden="true">                                                      
+                              <label id="deliveryAdressLabel">Адрес доставки <span class="required">*</span></label>                   
+                            <shop-underline></shop-underline>
+                          </food-md-decorator >
+                        </food-input>
+                      </div>
+                                  
+                        <!-- <div id="map-container" hidden$=[[!locationDetected]]  hidemap$=[[hideMap]]>
+                          <div id="map"></div>
+                        </div> -->
+                  
+                        <div class="row input-row">
+                          <food-input>
+                              <input
+                                  id="comment" type="text" value=[[deliveryDescr]]
+                                  placeholder="Пожелания по доставке, код домофона, особые условия"                  
+                                  aria-labelledby="deliveryCommentLabel accountInfoHeading">
+                            <food-md-decorator  error-message="Укажите адрес" aria-hidden="true">
+                              <label id="deliveryCommentLabel">Пожелания по доставке</label>
+                              <shop-underline></shop-underline>
+                            </food-md-decorator >
+                          </food-input>
+                        </div>
+           
+                      <div class="layout horizontal flex">
+                          <section class="flex">                    
+                              <h2>Время доставки <br> с 7:00 до 13:00 <span class="required">*</span></h2>
+                              <h2>[[dateStamp]]</h2>
+                              <input id="time" type="time" name="delivery-time" value={{deliveryTime}}
+                                       min="7:00" max="13:00" pattern="[0-9]{2}:[0-9]{2}">
+                              <span class="validity"></span>                           
+                          </section>
+                          <section class="flex">
+                              <h2>Способ оплаты  <span class="required">*</span></h2>
+                              <paper-radio-group id="payment" selected="[[payment]]">
+                                  <paper-radio-button name="delivery">При доставке</paper-radio-button>                         
+                                  <paper-radio-button name="online">Онлайн</paper-radio-button>
+                              </paper-radio-group>
+                          </section>
+                        </div>
+                      <div class="row input-row">
+                        <food-input>
+                          <input
+                              id="name" type="text"
+                              placeholder="Ваше имя" value=[[username]]                   
+                              aria-labelledby="accountPhoneLabel accountInfoHeading">
+
+                          <food-md-decorator  error-message="" aria-hidden="true">
+                            <label id="accountPhoneLabel">Ваше имя</label>
+                            <shop-underline></shop-underline>
+                          </food-md-decorator >
+                        </food-input>
+                      </div>
+                      <div class="row input-row">
+                        <food-input>
+                          <input
+                              type="tel" id="phone" name="accountPhone" pattern="\d{10,}"
+                              placeholder="Номер телефона" value=[[tel]]
+                              aria-labelledby="accountPhoneLabel accountInfoHeading">
+                          <food-md-decorator  error-message="Неправильный формат номера" aria-hidden="true">
+                            <label id="accountPhoneLabel">Телефон для связи по вопросам доставки</label>
+                            <shop-underline></shop-underline>
+                          </food-md-decorator >
+                        </food-input>
+                      </div>
+                    
+                      
+                </section>
+                
+                <section>  
+       
+                  <h2>Заказ</h2>
+                  <dom-repeat items="[[cart]]" as="entry">
+                    <template>
+                      <div class="row order-summary-row">
+                        <div class="flex">[[_getEntryItemTitleWithQuantity(entry.item.title,entry.quantity)]]</div>
+                        <div>[[_getEntryTotal(entry)]]</div>
+                      </div>
+                    </template>
+                  </dom-repeat>
+                  <div id="discount" hidden$=[[!_hasDiscount(discount)]]>
+                      Скидка [[discount]]%
+                  </div>
+                  <div class="row total-row">
+                    <div class="flex">Всего к оплате</div>
+                    <div>[[_formatTotal(total,discount)]]</div>
+                  </div>
+                  <div class="layout horizontal-reverse">
+                    <food-button responsive id="submitBox">
+                        <input type="button" on-click="_submit" value="[[_submitButtonText(payment)]]">
+                    </food-button>  
+                  </div>
+                </section>             
+              </div>
+            
+             
+            </form>
+          </iron-form>
+          <!-- hidden="[[_paymentOnlineHidden(payment)]]" -->
+          <sdm-request id="request" hidden></sdm-request>
+          <!-- <food-button responsive>
+              <input type="button" on-click="_test" value="Тест оплаты">
+          </food-button>   -->
+        </div>
+
+        <!-- Success message UI -->
+        <header state="success">
+          <h1>Спасибо</h1>
+          <p>заказ [[order.number]] размещен успешно</p>
+          <div hidden$=[[!_hasDiscount(order.discount)]]>  
+            Всего [[order.total]]
+          </div>
+
+          <div  hidden$=[[!_hasDiscount(order.discount)]]>    
+              Скидка [[order.discount]]%
+          </div>
+         
+          <div class="flex">[[_deliveryTotalLabel(order.payment,order.pay)]]</div>
+          <div>[[_formatTotal(order.totalWithDiscount)]]</div>
+          <h2 class="header">Доставка</h2>
+          <h2>[[_humanReadableTime(order.delivery)]]</h2>
+          <food-image alt="Спасибо!" src="backgrounds/welcome"></food-image>
+          <food-button responsive>
+            <a href="/" on-tap="_reset">Завершить</a>
+          </food-button>
+        </header>
+
+        <!-- Error message UI -->
+        <header state="error">
+          <h1>We couldn&acute;t process your order</h1>
+          <p id="errorMessage">[[response.errorMessage]]</p>
+          <food-button responsive>
+            <a href="/checkout">Try again</a>
+          </food-button>
+        </header>
+        <food-account id="account" state="account" new-account></food-account>
+      </iron-pages>
+
+    </div>
+
+    <!-- Handles the routing for the success and error subroutes -->
+    <app-route
+        active="{{routeActive}}"
+        data="{{routeData}}"
+        route="[[route]]"
+        pattern="/:state">
+     </app-route>
+
+    <!-- Show spinner when waiting for the server to repond -->
+    <paper-spinner-lite active="[[waiting]]"></paper-spinner-lite>
+
+  </template>
+
+  <script>
+
+    class ShopCheckout extends Polymer.Element {
+
+      static get is() { return 'food-checkout'; }
+
+      static get properties() { return {
+
+        /**
+         * The route for the state. e.g. `success` and `error` are mounted in the
+         * `checkout/` route.
+         */
+        route: {
+          type: Object,
+          notify: true
+        },
+        numItems: {
+          type: Number,
+          value: 0
+        },
+        /**
+         * The total price of the contents in the user's cart.
+         */
+        promo: {
+          type: String,
+          observer: '_promoChanged'
+        },
+        discount: {
+          type: Number,
+          value: 0
+        },
+        total: Number,
+
+        big: {
+          type: Boolean,
+          reflectToAttribute: true,
+          computed: '_computeBig(cart.length)'
+        },
+        /**
+         * The state of the form. Valid values are:
+         * `init`, `success` and `error`.
+         */
+        state: {
+          type: String,
+          reflectToAttribute: true,
+          observer: '_stateChanged',
+          value: 'init'
+        },
+
+        validStates:{
+          type: Array,
+          value: ['init','success','error', 'account']
+        },
+        payment: {
+          type: String,
+          value: "delivery"
+          // value: "online"
+        },
+        /**
+         * An array containing the items in the cart.
+         */
+        cart: Array,
+
+        min: {
+          type: String,
+          value: "00"
+        },
+
+        hour: {
+          type: String,
+          value: '9'
+        },
+        /**
+         * If true, food-checkout is currently visible on the screen.
+         */
+        visible: {
+          type: Boolean,
+          observer: '_visibleChanged'
+        },
+
+        /**
+         * True when waiting for the server to repond.
+         */
+        waiting: {
+          type: Boolean,
+          readOnly: true,
+          reflectToAttribute: true
+        },
+        // deliveryTime:{
+        //   type: Array,
+        //   value: [{time: 6:30 }]
+        // },
+        /**
+         * True when waiting for the server to repond.
+         */
+        _hasItems: {
+          type: Boolean,
+          computed: '_computeHasItem(cart.length)'
+        },
+                
+        opened: {
+          type: Boolean,
+          value: false,     
+          observer: '_deliveryMapOpened'                  
+        },
+
+        locationDetected:{
+          type: Boolean,
+          value: false
+        },
+
+        username: {
+          type: String,
+          value: function() { 
+            let user = Meteor.user();
+            return user&&user.profile ? user.profile.name : "";
+          }
+        },
+
+        tel: {
+          type: String,
+          value: function() { 
+            let user = Meteor.user();
+            return user&&user.profile ? user.profile.phone : "";
+          }
+        },
+        deliveryAddress:{
+          type: String,
+          value: function() { 
+            let user = Meteor.user();
+            return user&&user.profile ? user.profile.address : "";
+          }
+        },
+        deliveryDescr: {
+          type: String,
+          value: function() { 
+            let user = Meteor.user();
+            return user&&user.profile ? user.profile.comment : "";
+          }
+        },
+
+        dateStamp: {
+          type: String,
+        },
+        deliveryTime:{
+          type: String,
+          value: function() { 
+            let user = Meteor.user();
+            return user && user.profile && user.profile.delivery? fecha.format(Meteor.user().profile.delivery, "HH:mm") : "07:30";
+          }
+           
+        },
+        map:{
+          type: Object,
+          value: null
+        },
+        subscribed: Boolean,
+        order:{
+          type: Object,
+          computed: '_computeOrder(number,subscribed)'
+        },
+        number:{
+          type: Number
+        }
+        
+      }}
+
+      static get observers() { return [
+        '_updateState(routeActive, routeData)',
+        '_geoLocationChanged(latitude,longitude)'
+      ]}
+      
+      _computeOrder(number,subscribed)
+      {
+        // console.log("order",number)
+        return Orders.findOne({number: number});
+      }
+
+      _deliveryTotalLabel(payment, pay){
+          return payment==="completed" ? "Оплачено": "Всего к оплате";       
+      }
+
+
+    toggle() {
+      this.$.collapse.toggle();
+      }
+
+    _deliveryMapOpened(opened)
+    {
+      if(opened)
+      {
+        this.scrollIntoView(this.$.map)
+      }
+    }
+    
+    _humanReadableTime(time)
+      {
+        return fecha.format(time, 'HH:mm DD MMMM YYYY');
+      }
+
+    _icon_collapse(opened)
+    {
+      return opened?"icons:expand-more":"icons:expand-less"
+    }
+
+      _hasDiscount(discount)
+      {
+        return !!discount
+      }
+      
+      _formatTotal(total, discount) {
+
+        return isNaN(total) ? '' : (discount ? (total - ((total / 100) * discount)).toFixed(2): total && total.toFixed ? total.toFixed(2): "") + ' руб.';
+      }
+
+
+      _promoChanged(promo)
+      {
+        this._promoDebouncer = Polymer.Debouncer.debounce(this._promoDebouncer,
+          Polymer.Async.timeOut.after(600), ()=>{
+
+            Meteor.call('getPromoDiscount', this.promo,(err,result)=>this.discount = result);
+            console.log("#promo", this.promo)
+          });      
+      }
+
+      _hiddenCartForState(state)
+      {
+        return state == 'success'
+      }
+
+      _openedForState(state)
+      {
+        return state != 'account'
+      }
+
+
+      _stateChanged(state)
+      { 
+        if( state === 'account' )
+        {
+            let path = 'food-' + state + '.html'
+            Polymer.importHref(
+              this.resolveUrl(path),()=>{
+                Polymer.RenderStatus.afterNextRender(this,()=>{    
+                  this.$.account.name = this.$.name.value;
+                  this.$.account.phone = this.$.phone.value;
+                  this.$.account.time = this.deliveryTime;
+                  this.$.account.address = this.$.address.value;
+                  this.$.account.comment = this.$.comment.value;
+                });
+              }
+              , null, true);
+          
+          Polymer.AppLayout.scroll({ top: 0, behavior: 'silent' });
+    
+        }
+        if( state === 'init' )
+        {           
+          Polymer.RenderStatus.afterNextRender(this,()=>{        
+            this.$.payment.selected = "";
+            this.$.payment.selected = this.payment;
+          });
+ 
+        }
+
+      } 
+
+      _getEntryItemTitleWithQuantity(title,quantity)
+      {
+        if(title)
+        {          
+          if(quantity > 1)          
+            quantity = " x "+quantity;
+          else
+            quantity = ""
+
+          return title + quantity;
+        }
+      }
+
+      _submitButtonText(payment)
+      {
+        return payment === 'delivery' ? "Оформить": "Оплатить"        
+      }
+
+      __boolean(value)
+      {
+        return !!value;
+      }
+      _test(e)
+      {
+        this.$.request.$.form.submit();
+      }
+      _computeBig(count)
+      { 
+        return count > 5;
+      }
+
+  
+      _getPluralizedQuantity(quantity) {
+        return quantity + ' ' + (quantity === 1 ? 'позиция' : 'позиций');
+      }
+
+      _submit() {
+        var time = this.$.time.value.split(/\:|\-/g);
+        
+        if( this.numItems == 0 )
+        {
+          app._showSnackbar("Ваша корзина пуста")
+          return 
+        }
+
+        if (this._validateForm())         
+        {
+          // for delivery its over. just goes to success screen and clear up 
+          if( time[0] < 7 || time[0] > 13)
+          {
+            app._showSnackbar("Выберите время доставки")
+            return 
+          }
+
+          var datetime = new Date();
+       
+            if(datetime.getHours() < 7) {
+               //not yet opened we can make order  
+            } else {
+              datetime.setDate(new Date().getDate()+1);
+            }
+            datetime.setHours(time[0]);
+            datetime.setMinutes(time[1]);
+
+          let order = {
+            promo: this.promo,
+            address: this.$.address.value,
+            userId: Meteor.userId() ||'',
+            name: this.$.name.value,
+            phone: this.$.phone.value,   
+            comment: this.$.comment.value,
+            delivery: datetime,
+            pay: this.$.payment.selected,    
+            cart: this.cart
+          };  
+                  
+          if(! Meteor.user() )
+          {      
+            new Promise((resolve, reject) =>{
+            
+                if (!this.offerCreateAccountModal) {
+                  this.offerCreateAccountModal = document.createElement('food-account-modal');           
+                  Polymer.dom(this.root).appendChild(this.offerCreateAccountModal);
+                }
+                this.offerCreateAccountModal.resolve = resolve;
+                this.offerCreateAccountModal.reject = reject;
+                this.offerCreateAccountModal.open();
+            }).then((result)=>{
+
+                if( result == 'continue' )
+                {
+                  Accounts.callLoginMethod({
+                    methodArguments: [{guest: true, name: order.name, phone: order.phone }],
+                    userCallback: (err)=>{
+                        
+                      if(!err)
+                      {
+                        order.userId = Meteor.userId();
+                        this.processNewOrder(order);
+                      }
+                      else
+                      {
+                        this._pushState('error')
+                      }
+                    }
+                  });
+                }else if( result == 'new' )
+                {
+                  this.state = 'account'
+                }         
+            })
+          }else
+          {
+            this.processNewOrder(order);
+          }         
+          
+        }          
+      }
+
+      processNewOrder(order)
+      {
+        this.newOrder(order).
+            then((result)=>{
+              this.number = result;              
+              if(this.$.payment.selected === 'online')
+              {
+                this.$.request.proceedPayment(Orders.findOne({number: this.number})._id);
+              }                
+              else
+              {
+                this._pushState('success');           
+                this.dispatchEvent(new CustomEvent('order-placed', {bubbles: true, composed: true}));
+                
+              }  
+            })
+            .catch((err)=>this._pushState('error')) 
+      }
+      
+      newOrder(order)
+      {
+        return new Promise((resolve,reject)=>{
+         
+          this._setWaiting(true);
+          Meteor.call("newOrder", order,(err,result)=>{
+            if(!err)
+            {                          
+              resolve(result);                    
+            }else
+            {
+              // console.log("#newOrder error",err)
+              reject(err)   
+            }
+            this._setWaiting(false);
+          });  
+        })
+      }
+      _toggleMap(e)
+      {
+        this.hideMap = !this.hideMap;
+      }
+
+      _paymentOnlineHidden(payment)
+      {
+        return payment === 'delivery'
+      }  
+      /**
+       * Sets the valid state and updates the location.
+       */
+      _pushState(state) {
+        this.set('route.path', state);
+      }
+
+      /**
+       * Checks that the `:state` subroute is correct. That is, the state has been pushed
+       * after receiving response from the server. e.g. Users can only go to `/checkout/success`
+       * if the server responsed with a success message.
+       */
+      _updateState(active, routeData) {
+        if (active && routeData) {
+          let state = routeData.state;
+          if (_.contains(this.validStates,state)) {
+            this.state = state;
+            return;
+          }
+        }
+        this.state = 'init';
+      }
+
+      /**
+       * Sets the initial state.
+       */
+      _reset() {
+        let form = this.$.checkoutForm;
+
+        this._setWaiting(false);
+        this.order = "";
+        this.state = "init";
+        form.reset();
+
+        let nativeForm = form._form;
+        if (!nativeForm) {
+          return;
+        }
+      
+        // Remove the `aria-invalid` attribute from the form inputs.
+        for (let el, i = 0; el = nativeForm.elements[i], i < nativeForm.elements.length; i++) {
+          el.removeAttribute('aria-invalid');
+        }
+      }
+
+      /**
+       * Validates the form's inputs and adds the `aria-invalid` attribute to the inputs
+       * that don't match the pattern specified in the markup.
+       */
+      _validateForm() {
+        let form = this.$.checkoutForm;
+        let firstInvalid = false;
+        let nativeForm = form._form;
+
+        for (let el, i = 0; el = nativeForm.elements[i], i < nativeForm.elements.length; i++) {
+          if (el.checkValidity()) {
+            el.removeAttribute('aria-invalid');
+          } else {
+            if (!firstInvalid) {
+              // announce error message
+              if (el.nextElementSibling) {
+                this.dispatchEvent(new CustomEvent('announce', {bubbles: true, composed: true,
+                  detail: el.nextElementSibling.getAttribute('error-message')}));
+              }
+              if (el.scrollIntoViewIfNeeded) {
+                // safari, chrome
+                el.scrollIntoViewIfNeeded();
+              } else {
+                // firefox, edge, ie
+                el.scrollIntoView(false);
+              }
+              el.focus();
+              firstInvalid = true;
+            }
+            el.setAttribute('aria-invalid', 'true');
+          }
+        }
+        return !firstInvalid;
+      }
+     
+      /**
+       * Adds the cart data to the payload that will be sent to the server
+       * and updates the UI to reflect the waiting state.
+       */
+      _willSendRequest(e) {
+        let form = e.target;
+        let body = form.ajax && form.ajax.body;
+
+        this._setWaiting(true);
+
+        if (!body) {
+          return;
+        }
+        // Populate the request body where `cartItemsId[i]` is the ID and `cartItemsQuantity[i]`
+        // is the quantity for some item `i`.
+        body.cartItemsId = [];
+        body.cartItemsQuantity = [];
+
+        this.cart.forEach((cartItem) => {
+          body.cartItemsId.push(cartItem.item.name);
+          body.cartItemsQuantity.push(cartItem.quantity);
+        });
+      }
+
+      /**
+       * Handles the response from the server by checking the response status
+       * and transitioning to the success or error UI.
+       */
+      _didReceiveResponse(e) {
+        let response = e.detail.response;
+
+        this.response = response;
+      
+      }
+
+      _computeHasItem(cartLength) {
+        return cartLength > 0;
+      }
+
+      _formatPrice(total) {
+        return isNaN(total) ? '' : total + ' руб.';//'$' + total.toFixed(2);
+      }
+
+      _getEntryTotal(entry) {
+        return this._formatPrice(entry.quantity * entry.item.price);
+      }
+
+      _visibleChanged(visible) {
+        if (!visible) {
+          return;
+        }
+        // Reset the UI states
+        if(this.state != 'success')
+          this._reset();
+        // Notify the page's title
+        this.dispatchEvent(new CustomEvent('change-section', {
+          bubbles: true, composed: true, detail: { title: 'Checkout' }}));
+      }
+           
+      _geoLocationChanged(latitude,longitude)
+      {       
+        if(latitude && longitude)
+        {
+            this.locationDetected = true;
+          //   this.latitude = latitude;
+          //   this.longitude = longitude;
+          // console.log("_geoLocationChanged",latitude,longitude)
+          
+          if( this.$.address.value.length < 5 )
+          {
+            this._updateDeliveryAddress([latitude,longitude]);  
+          }
+     
+        }
+      }
+      
+      initMap()
+      {
+          this.map = new ymaps.Map(this.$.map, {
+                    center: [ 37.554493, 55.670077 ],
+                    zoom: 12,
+                    controls: ['geolocationControl','zoomControl']
+                }, 
+                {
+                    searchControlProvider: 'yandex#search'
+                });
+               
+                Polymer.RenderStatus.afterNextRender(this,()=>{
+
+                  Meteor.call('deliveryGeo',(err,result)=>{
+                      if(!err)            {
+                          var deliveryZones = ymaps.geoQuery(result).addToMap(this.map)
+                          deliveryZones.each(function (obj) {
+                          var color = obj.options.get('fillColor');
+                              color = color.substring(0, color.length - 2);
+                          obj.options.set({fillColor: color, fillOpacity: 0.4});
+                          }); 
+                      }               
+                  })
+              })     
+              this.map.geoObjects.events.add('click', (e)=> {
+
+                // console.log("#location geoObjects",e.get('coords'));
+                this._updateDeliveryAddress(e.get('coords'))
+                this.$.address.focus();
+              })
+
+              this.map.events.add('click', (e)=> {
+                  this._updateDeliveryAddress(e.get('coords'))
+                  this.$.address.focus();
+              });
+
+   
+      }
+
+      _updateDeliveryAddress(coords)
+      {      
+        if(ymaps) 
+          ymaps.geocode( coords[0] +','+ coords[1], { kind: "house", json:true, results: 10 }).then((res)=> 
+          {
+            // Выбираем первый результат геокодирования.
+            // console.log("geocode",res.GeoObjectCollection.featureMember);
+            this.featureMember = res.GeoObjectCollection.featureMember;
+
+            if(this.featureMember.length )
+            {
+              this.$.address.value = this.featureMember[0].GeoObject.name + " ";
+            }
+          });
+      }
+    
+      ready() {
+        window.checkout = this;
+        super.ready();
+
+        this.addEventListener('route-change', (e)=> {          
+          e.stopPropagation();
+          if( e.detail.path === "/home"){
+            this.state = "init";
+            this._submit();
+
+          }
+        })        
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+
+
+        var datetime = new Date();
+        
+        if(datetime.getHours() < 7) {
+          //not yet opened we can make order  
+        } else {
+          datetime.setDate(new Date().getDate()+1);
+        }
+        this.dateStamp = fecha.format(datetime, 'DD MMMM YYYY');
+
+        Polymer.RenderStatus.afterNextRender(this,()=>{
+          
+          if(ymaps)
+          {
+            ymaps.ready(()=>this.initMap()); 
+          }
+                  
+          Tracker.autorun(() => {
+              Meteor.subscribe('orders',()=>this.subscribed = true);
+          });
+            
+        })
+        
+      }
+    }
+
+    customElements.define(ShopCheckout.is, ShopCheckout);
+
+  </script>
+
+</dom-module>

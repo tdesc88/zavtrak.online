@@ -1,0 +1,248 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="redux-store.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-storage/app-localstorage/app-localstorage-document.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+
+
+<dom-module id="food-enter">
+
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment iron-positioning"></style>
+    <style include="paper-material-shared-styles"></style>
+    <style>
+        :host {
+              display: block;
+              min-height: 100vh;
+          }
+        
+        :host paper-material[name="kitchen"],
+        :host paper-material[name="delivery"]
+        {
+            display: block;
+            padding: 24px 16px;
+            margin: 8px;
+        }
+        :host paper-material[name="kitchen"][status="cooked"] food-cart-item
+        {
+            display: none;
+        }
+        #content
+        {
+            max-width: 480px;
+            padding: 24px 16px;
+        }
+
+        .signInButton img{
+            padding: 0 8px 0 2px;
+            max-height: 15px;
+        }
+        .signInButton{
+            width: 220px;
+            text-align: left;
+            margin-bottom: 15px;
+            text-transform: none;
+            min-height: 40px;
+        }
+  
+        :host #social
+        {
+            padding: 24px 0;
+        }
+        #googSignIn{
+            background-color: white;
+        }
+        #fbSignIn{
+            background-color: #3B5999;
+            color: white;
+        }
+        #twtrSignIn{
+            background-color: #55ACEE;
+            color: white;
+        }
+        #ghSignIn{
+            background-color: #F5F5F5
+        }
+        #anonSignIn{
+            background-color: #303030;
+            color: white;
+        }
+        #fbSignIn:hover{
+            background-color: #4265b0;
+        }
+        #twtrSignIn:hover{
+            background-color: #5cb9ff;
+        }
+        #ghSignIn:hover{
+            background-color: white;
+        }
+        #anonSignIn:hover{
+            background-color: #414040;
+        }
+        
+        #social {
+            @apply --layout-horizontal;
+        }
+
+        :host([mini]) #social {
+            @apply --layout-vertical;
+        } 
+        :host([mini]) #social paper-button 
+        {
+            margin: 16px;
+        }
+          
+
+  </style>
+
+      <div class="layout vertical center">
+
+        <div id="content" class="flex">
+          
+            <paper-icon-button></paper-icon-button>
+            
+            <paper-input id="login" label="Логин"></paper-input>
+            <paper-input id="password" label="Пароль"></paper-input>
+            <div id="social">
+                <paper-button id="googSignIn" class$="signInButton" on-tap="_loginWithGoogle" data-auth="#google" raised>
+                    
+                    <div style="width:15px; height:15px; padding: 0 8px 0 2px;">
+                        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                            viewBox="0 0 123.3 126.2" style="enable-background:new 0 0 123.3 126.2;" xml:space="preserve">
+                        <style type="text/css">
+                            .st0{clip-path:url(#SVGID_2_);fill:#F9BC15;}
+                            .st1{clip-path:url(#SVGID_4_);fill:#EA4535;}
+                            .st2{clip-path:url(#SVGID_6_);fill:#36A852;}
+                            .st3{clip-path:url(#SVGID_8_);fill:#557EBF;}
+                        </style><g><g><defs>
+                            <path id="SVGID_1_" d="M121.9,51.6h-7.2H91.2H63.1V76H97c-3.2,15.5-16.4,24.4-33.8,24.4c-20.7,0-37.3-16.6-37.3-37.3
+                                s16.6-37.3,37.3-37.3c8.9,0,16.9,3.2,23.2,8.3l18.4-18.4C93.5,6,79.2,0,63.1,0C28.1,0,0,28.1,0,63.1s28.1,63.1,63.1,63.1
+                                c31.6,0,60.2-22.9,60.2-63.1C123.3,59.4,122.8,55.4,121.9,51.6z"/>
+                            </defs><clipPath id="SVGID_2_"><use xlink:href="#SVGID_1_" style="overflow:visible;"/></clipPath><polygon class="st0" points="-5.7,100.4 -5.7,25.8 43,63.1 "/></g><g><defs>
+                            <path id="SVGID_3_" d="M121.9,51.6h-7.2H91.2H63.1V76H97c-3.2,15.5-16.4,24.4-33.8,24.4c-20.7,0-37.3-16.6-37.3-37.3
+                                s16.6-37.3,37.3-37.3c8.9,0,16.9,3.2,23.2,8.3l18.4-18.4C93.5,6,79.2,0,63.1,0C28.1,0,0,28.1,0,63.1s28.1,63.1,63.1,63.1
+                                c31.6,0,60.2-22.9,60.2-63.1C123.3,59.4,122.8,55.4,121.9,51.6z"/>
+                            </defs><clipPath id="SVGID_4_"><use xlink:href="#SVGID_3_" style="overflow:visible;"/></clipPath><polygon class="st1" points="-5.7,25.8 43,63.1 63.1,45.6 132,34.4 132,-5.7 -5.7,-5.7"/></g><g><defs>
+                            <path id="SVGID_5_" d="M121.9,51.6h-7.2H91.2H63.1V76H97c-3.2,15.5-16.4,24.4-33.8,24.4c-20.7,0-37.3-16.6-37.3-37.3
+                                s16.6-37.3,37.3-37.3c8.9,0,16.9,3.2,23.2,8.3l18.4-18.4C93.5,6,79.2,0,63.1,0C28.1,0,0,28.1,0,63.1s28.1,63.1,63.1,63.1
+                                c31.6,0,60.2-22.9,60.2-63.1C123.3,59.4,122.8,55.4,121.9,51.6z"/>
+                            </defs><clipPath id="SVGID_6_"><use xlink:href="#SVGID_5_"  style="overflow:visible;"/></clipPath><polygon class="st2" points="-5.7,100.4 80.3,34.4 103,37.3 132,-5.7 132,132 -5.7,132"/></g><g><defs>
+                                <path id="SVGID_7_" d="M121.9,51.6h-7.2H91.2H63.1V76H97c-3.2,15.5-16.4,24.4-33.8,24.4c-20.7,0-37.3-16.6-37.3-37.3
+                                s16.6-37.3,37.3-37.3c8.9,0,16.9,3.2,23.2,8.3l18.4-18.4C93.5,6,79.2,0,63.1,0C28.1,0,0,28.1,0,63.1s28.1,63.1,63.1,63.1
+                                c31.6,0,60.2-22.9,60.2-63.1C123.3,59.4,122.8,55.4,121.9,51.6z"/>
+                            </defs><clipPath id="SVGID_8_"><use xlink:href="#SVGID_7_"  style="overflow:visible;"/></clipPath><polygon class="st3" points="132,132 43,63.1 31.6,54.5 132,25.8"/></g></g>
+                        </svg>
+                    </div>
+                    Google
+                </paper-button>
+                <paper-button id="fbSignIn" class$="signInButton" on-tap="_loginWithFacebook" raised>
+                    <div style="width:15px; height:15px">
+                        <svg viewBox="0 0 7.94 16.74" style="height:15px;fill:white;">
+                            <path d="M5.39,16.79H2.29V8.52H0.22V5.67H2.29V4c0-2.32.63-3.74,3.37-3.74H7.94V3.1H6.51c-1.07,0-1.12.4-1.12,1.14V5.67H8L7.65,8.52H5.39v8.27Z" transform="translate(-0.12 -0.15)" style="stroke:#000;stroke-miterlimit:10;stroke-width:0.20000000298023224px"/>
+                        </svg>
+                    </div>
+                    Facebook
+                </paper-button>
+                <paper-button id="twtrSignIn" class$="signInButton" on-tap="_loginWithVk" raised>
+                    <div style="width:15px; height:15px; padding: 0 8px 0 2px;">
+                        <svg enable-background="0 0 7.94 16.74" width="15px" height="15px" version="1.1" viewBox="0 0 7.94 16.74" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g id="color_x5F_fill"><path d="M84.418,69.921c-2.527,1.583-12.807,2.054-15.295,0.246c-1.365-0.991-2.613-2.232-3.799-3.412   c-0.828-0.826-1.77-1.227-2.482-2.123c-0.58-0.734-0.979-1.599-1.592-2.321c-1.033-1.215-2.625-2.248-3.885-0.764   c-1.895,2.231,0.299,6.617-2.229,8.285c-0.848,0.56-1.703,0.722-2.762,0.642l-2.346,0.107c-1.379,0.027-3.562,0.039-5.129-0.244   c-1.75-0.315-3.193-1.271-4.773-1.973c-3.002-1.331-5.863-3.145-8.039-5.658c-5.922-6.843-13.877-16.255-16.967-24.859   c-0.637-1.768-2.314-5.267-0.723-6.784c2.164-1.572,12.789-2.017,14.445,0.416c0.674,0.987,1.098,2.436,1.574,3.555   c0.592,1.396,0.914,2.713,1.84,3.949c0.82,1.097,1.426,2.199,2.061,3.402c0.713,1.349,1.385,2.643,2.252,3.886   c0.588,0.845,2.143,2.524,3.125,2.65c2.398,0.307,2.248-5.521,2.07-6.945c-0.17-1.371-0.215-2.825-0.17-4.216   c0.039-1.186,0.146-2.857-0.557-3.826c-1.145-1.58-3.695-0.397-3.895-2.52c0.422-0.603,0.332-1.138,3.146-2.064   c2.215-0.729,3.646-0.706,5.107-0.589c2.98,0.239,6.139-0.568,9.014,0.398c2.746,0.925,2.322,4.828,2.23,7.168   c-0.123,3.195,0.008,6.312,0,9.553c-0.004,1.477-0.062,2.912,1.736,2.793c1.688-0.113,1.859-1.532,2.664-2.704   c1.121-1.633,2.148-3.288,3.289-4.916c1.537-2.199,2-4.67,3.447-6.923c0.518-0.807,0.963-2.568,1.76-3.205   c0.604-0.481,1.75-0.275,2.48-0.275h1.736c1.33,0.016,2.686,0.035,4.051,0.083c1.967,0.068,4.17-0.359,6.121-0.084   c8.416,1.188-10.578,19.191-9.59,22.403c0.684,2.218,5.016,4.703,6.58,6.521C82.998,61.991,89.389,66.81,84.418,69.921z" fill="#4C75A3"/></g><g id="offset_x5F_print_x5F_outline"/></svg>
+                    </div>
+                    Vk
+                </paper-button>
+            </div>
+        </div>
+      </div>
+
+
+
+    <!-- > Product ( category, type , business logic of client )
+
+    > Order ( flow , state )  - Cart = creates order, user just approve?(register)
+
+    > Delivery  ( map, delivery position, user administration / user profiles ) -->
+
+        
+  </template>
+
+  <script>
+
+    class FoodEnter extends ReduxMixin(Polymer.Element) {
+
+      static get is() { return 'food-enter'; }
+    
+      static get properties() { return {
+          mini:{
+            type: Boolean,
+            reflectToAttribute: true,
+            value: true
+          },
+        dictionary:{
+          type: Array,
+          statePath: 'dev.dictionary'
+        },              
+      }}
+
+        _loginWithFacebook()
+        {
+            Meteor.loginWithFacebook({ requestPermissions : ['public_profile','email']}, this._loginCallback.bind(this));
+        }
+        _loginWithGoogle()
+        {
+            Meteor.loginWithGoogle({ requestPermissions : ['https://www.googleapis.com/auth/userinfo.email']}, this._loginCallback.bind(this));
+        }
+        _loginWithVk()
+        {
+            Meteor.loginWithVk({ requestPermissions : ['https://www.googleapis.com/auth/userinfo.email']}, this._loginCallback.bind(this));
+        }
+        _loginAsGuest()
+        {
+            
+            // Accounts.callLoginMethod
+            AccountsAnonymous.login(function(err) {
+                        console.log(err);                   
+               });
+        }
+      
+
+        connectedCallback() {
+            super.connectedCallback();
+            window.enter = this;
+            console.log('food-kitchen created!');
+        }
+        _loginCallback(err)
+        {
+            console.log(err);
+        }
+
+    }
+
+    customElements.define(FoodEnter.is, FoodEnter);
+
+  </script>
+
+</dom-module>

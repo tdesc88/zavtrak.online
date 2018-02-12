@@ -1,0 +1,69 @@
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="categories-list.html">
+<!--
+`<categories-list>` is Description
+
+@element categories-list
+-->
+<dom-module id="categories-list-edit">
+    <template>
+        <style>
+            :host {
+                display: block;
+
+                padding: 0 24px;
+            }
+            .item
+            {
+                @apply --layout-horizontal;
+            }
+        </style>
+
+        <dom-repeat items="[[categories]]">
+            <template strip-whitespace>
+                <div class="item">          
+                    <h2>[[item.title]]</h2>&nbsp;<span hidden$=[[!item.enabled]]>Активна</span>
+                    <paper-button on-tap="_edit">Редактировать</paper-button>  
+                    <paper-button on-tap="_remove">Удалить</paper-button>         
+                </div>
+            </template>
+        </dom-repeat>
+
+
+    </template>
+
+    <script>
+        class CategoriesListEdit extends CategoriesList { 
+
+            static get is() { return 'categories-list-edit'; }
+    
+            constructor() {
+                super();
+            }
+
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+            _edit(e)
+            {
+                this.dispatchEvent(new CustomEvent('category-edit', {  detail: { category:e.model.item } , bubbles: true, composed: true}));
+            }
+            remove(e)
+            {
+                this.dispatchEvent(new CustomEvent('category-remove', { detail: { category:e.model.item } , bubbles: true, composed: true}));
+            }
+            // categoryTap(e)
+            // {
+            //  
+            // }
+
+        }
+
+        window.customElements.define(CategoriesListEdit.is, CategoriesListEdit);
+    </script>
+</dom-module>

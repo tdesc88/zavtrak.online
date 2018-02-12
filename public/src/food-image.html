@@ -1,0 +1,109 @@
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<dom-module id="food-image">
+
+  <template>
+
+    <style>
+
+    :host {
+      display: block;
+      position: relative;
+      overflow: hidden;
+      background-size: contain;
+      background-position: center;
+    }
+
+    img {
+      @apply --layout-fit;
+
+      max-width: 100%;
+      max-height: 100%;
+      margin: 0 auto;
+      opacity: 0;
+      transition: 0.5s opacity;
+      @apply --food-image-img;
+    }
+
+    </style>
+    <picture>
+      <img id="img" alt$="[[alt]]" on-load="_onImgLoad" on-error="_onImgError">
+    </picture>
+   
+  </template>
+
+  <script>
+
+    class FoodImage extends Polymer.Element {
+
+      static get is() { return 'food-image'; }
+
+      static get properties() { return {
+
+        alt: String,
+        wide: {
+          type: Boolean,
+          value: false
+        },
+        cover: {
+          type: Boolean,
+          value: false
+        },
+        src: {
+          type: String,
+        },
+
+        placeholderImg: {
+          type: String,
+          observer: '_placeholderImgChanged'
+        }
+
+      }}
+
+      static get observers() {
+        return [
+                    '_srcChanged(src,wide,cover)'
+                ];
+      }
+
+      _srcChanged(src,wide,cover) {
+        this.$.img.removeAttribute('src');
+        this.$.img.style.transition = '';
+        this.$.img.style.opacity = 0;
+        if (src) {
+          var path =  'images/' + src 
+            + (cover ? "_cover": wide ? "_wide":'')           
+            +  ".jpg";
+          
+          this.$.img.src = Meteor.isCordova ? Meteor.absoluteUrl(path) : path;
+          // this.$.img.src = 'images/' + src + (this.cover ? "_wide.jpg":".jpg");
+
+          // this.$.img.src = 'images/' + src + ".jpg";
+          // console.log("_srcChanged", this.$.img.src);
+        }
+      }
+
+      _onImgLoad() {
+        this.$.img.style.transition = '0.5s opacity';
+        this.$.img.style.opacity = 1;
+      }
+
+      _onImgError() {
+        if (!this.placeholderImg) {
+          this.$.img.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#CCC" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>');
+        }
+      }
+
+      _placeholderImgChanged(placeholder) {
+        this.style.backgroundImage = 'url(\'' + placeholder + '\')';
+      }
+
+    }
+
+    customElements.define(FoodImage.is, FoodImage);
+
+  </script>
+
+</dom-module>
